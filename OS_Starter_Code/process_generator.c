@@ -8,6 +8,7 @@ int main(int argc, char * argv[])
     // TODO Initialization
     // 1. Read the input files.
     // 2. Ask the user for the chosen scheduling algorithm and its parameters, if there are any.
+    getAlgorithm();   
     // 3. Initiate and create the scheduler and clock processes.
     // 4. Use this function after creating the clock process to initialize clock
     initClk();
@@ -24,4 +25,24 @@ int main(int argc, char * argv[])
 void clearResources(int signum)
 {
     //TODO Clears all resources in case of interruption
+}
+
+void getAlgorithm()
+{
+     int t= getClk();
+    printf("Choose the prefered Algorithm....\n");
+    printf("1. HPF \n 2.SRTN \n 3.RR\n");
+    int Algo; 
+    scanf("%d", Algo);
+    while (!(Algo==1||Algo==2||Algo==3))
+    {
+        printf("Choose A valid Number....\n");
+        scanf("%d", Algo);
+    }
+    if (Algo==3)
+    {
+        printf("Enter the quantum time....\n");
+        int time_quantum;
+        scanf("%d", time_quantum);
+    }
 }
