@@ -5,25 +5,35 @@
 int Algo; 
 int time_quantum;
 
+//temp for input
+int a,b,c,d;
+struct PCB processToBeSent;
 //functions
 void clearResources(int);
 void getAlgorithm();
 void Start_Clk_Scheduler();
+void ReadFile();
+void IPC();
 
-
-
+struct msgBuff
+{
+    long mtype;
+    struct PCB process;
+};
 
 int main(int argc, char * argv[])
 {
     signal(SIGINT, clearResources);
     // TODO Initialization
     // 1. Read the input files.
+    ReadFile();
     // 2. Ask the user for the chosen scheduling algorithm and its parameters, if there are any.
     getAlgorithm();   
     // 3. Initiate and create the scheduler and clock processes.
     Start_Clk_Scheduler();
     // 4. Use this function after creating the clock process to initialize clock
     initClk();
+    IPC();
     // To get time use this
     //sleep(10);
     int x = getClk();
@@ -36,11 +46,38 @@ int main(int argc, char * argv[])
     // 7. Clear clock resources
     while(1)
     {
-   
+    x = getClk();
+    printf("current time is %d\n", x);
+    sleep(1);
     }
     destroyClk(true);
 }
 
+void ReadFile()
+{
+    //array of process
+    a=713;
+    b=3;
+    c=5;
+    d=4;
+    setPCB(&processToBeSent,a,b,c,d);
+}
+void IPC()
+{
+    int upQId = msgget(1234, 0666 | IPC_CREAT);
+
+    if (upQId == -1){
+        perror("error in creat");
+        exit(-1);
+    }
+    struct msgBuff processInfo;
+    processInfo.mtype = getpid()%10000;
+    CopyPCB(&processInfo.process, processToBeSent);
+    int val = msgsnd(upQId, &processInfo, sizeof(processInfo.process), IPC_NOWAIT);
+    if (val == -1)
+        printf("Error in send");
+    printf("The send process if is %d\n",processInfo.process.id);
+}
 void clearResources(int signum)
 {
     //TODO Clears all resources in case of interruption
@@ -93,7 +130,7 @@ void Start_Clk_Scheduler()
             char SendTime_quantum =time_quantum + '0';
             char * cSendTime_quantum = &SendTime_quantum;
             char* scheduler_arg_list[]={"./scheduler.out",cSendAlgo,cSendTime_quantum,0};
-            execve(scheduler_arg_list[0],scheduler_arg_list,NULL);
+            execve(scheduler_arg_list[0],scheduler_arg_list,NULL); // all the processes should be sent by execve
         }
      }
  }
