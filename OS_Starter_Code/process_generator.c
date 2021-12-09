@@ -8,6 +8,7 @@ int time_quantum;
 //temp for input
 int a,b,c,d;
 struct PCB processToBeSent;
+struct PriorityQueue que;
 //functions
 void clearResources(int);
 void getAlgorithm();
@@ -28,6 +29,13 @@ int main(int argc, char * argv[])
     // 1. Read the input files.
     ReadFile();
     // 2. Ask the user for the chosen scheduling algorithm and its parameters, if there are any.
+
+    while(que.head != NULL)
+    {
+        DeQueue(&que,&processToBeSent);
+        printf("id %d, Arr time %d, Running time %d, Priority %d \n", processToBeSent.id, processToBeSent.ArrTime, processToBeSent.RunTime, processToBeSent.Priority);
+    }
+
     getAlgorithm();   
     // 3. Initiate and create the scheduler and clock processes.
     Start_Clk_Scheduler();
@@ -83,7 +91,8 @@ void ReadFile()
                 if (feof(process))
                     break;
                 setPCB(&processToBeSent, id, arrivalTime, runningTime, priority);
-                printf("id %d, Arr time %d, Running time %d, Priority %d \n", processToBeSent.id, processToBeSent.ArrTime, processToBeSent.RunTime, processToBeSent.Priority);
+                //printf("id %d, Arr time %d, Running time %d, Priority %d \n", processToBeSent.id, processToBeSent.ArrTime, processToBeSent.RunTime, processToBeSent.Priority);
+                AddAccordingToArrivalTime(&que,processToBeSent);
             }
         }
     }

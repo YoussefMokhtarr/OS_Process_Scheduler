@@ -176,3 +176,24 @@ void Add(struct PriorityQueue* a, struct PCB pcb)
     node->pcb = pcb;
     enQueue(a,node);
 }
+
+void AddAccordingToArrivalTime(struct PriorityQueue* a, struct PCB pcb)
+{
+    struct PCBNode* node = (struct PCBNode*)malloc(sizeof(struct PCBNode));
+    node->pcb = pcb;
+    InsertAccordingToArrivalTime(a,node);
+}
+
+void AddAccordingToRemainingTime(struct PriorityQueue* a, struct PCB pcb)
+{
+    struct PCBNode* node = (struct PCBNode*)malloc(sizeof(struct PCBNode));
+    node->pcb = pcb;
+    InsertAccordingToReaminingTime(a,node); 
+}
+
+void AddAccordingToPriority(struct PriorityQueue* a, struct PCB pcb)
+{
+    struct PCBNode* node = (struct PCBNode*)malloc(sizeof(struct PCBNode));
+    node->pcb = pcb;
+    InsertAccordingToPriority(a,node);
+}
