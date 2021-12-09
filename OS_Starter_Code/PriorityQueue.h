@@ -1,4 +1,6 @@
-#include "headers.h"
+#include <stdio.h>
+#include <unistd.h>
+#include"PCB.h"
 
 struct PCBNode{
     struct PCB pcb;
@@ -145,6 +147,7 @@ void DeQueue(struct PriorityQueue* que, struct PCB* tosetPCB)
         struct PCBNode* node = que->head;
         que->head = que->head->next;
         CopyPCB(tosetPCB, node->pcb);
+        free(node);
         node = NULL;
     }
     else
@@ -165,4 +168,11 @@ int countNodes(struct PriorityQueue* a)
         n = n->next;
     }
     return iter;
+}
+
+void Add(struct PriorityQueue* a, struct PCB pcb)
+{
+    struct PCBNode* node = (struct PCBNode*)malloc(sizeof(struct PCBNode));
+    node->pcb = pcb;
+    enQueue(a,node);
 }
