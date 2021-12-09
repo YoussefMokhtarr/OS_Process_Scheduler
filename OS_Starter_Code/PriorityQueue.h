@@ -1,4 +1,5 @@
 #include "headers.h"
+//#include "PCB.h"
 
 struct PCBNode{
     struct PCB pcb;
@@ -17,8 +18,7 @@ struct PCBNode GenerateNode(struct PCB pcb)
     return New;
 }
 
-void initializeQueue(struct PriorityQueue* que)
-{
+void initializeQueue(struct PriorityQueue* que) {
     que->head = NULL;
 }
 

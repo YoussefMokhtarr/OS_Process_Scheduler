@@ -10,7 +10,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <signal.h>
-#include"PCB.h"
+#include "PCB.h"
 
 typedef short bool;
 #define true 1
@@ -66,3 +66,8 @@ void destroyClk(bool terminateAll)
         killpg(getpgrp(), SIGINT);
     }
 }
+
+struct msgBuff {
+    long mtype;
+    struct PCB process;
+};

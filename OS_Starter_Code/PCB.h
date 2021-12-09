@@ -19,6 +19,9 @@ struct PCB{
     int WaitTime; // time spent waiting
     int state; // ready or waiting or running or terminated
     int TA; // turnaround time
+    int RemainingTime; // RemainingTime time
+    int startTime;
+    int endTime;
     double WTA; // weighted tur arround time
     int PID; // pid of the actual created process
 };
@@ -47,6 +50,9 @@ void CopyPCB(struct PCB* pcb,struct PCB other)
     pcb->TA = other.TA;
     pcb->WTA = other.WTA;
     pcb->PID = other.PID;
+    pcb->startTime=other.startTime;
+    pcb->endTime=other.endTime;
+    pcb->RemainingTime=other.RemainingTime;
 }
 
 // sets the state

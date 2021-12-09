@@ -1,5 +1,5 @@
-#include "headers.h"
-
+#include "PriorityQueue.h"
+//#include "PCB.h"
 
 //variables 
 int Algo; 
@@ -7,22 +7,17 @@ int time_quantum;
 
 //temp for input
 int a,b,c,d;
-struct PCB processToBeSent;
+struct PCB processArr[3];
 //functions
 void clearResources(int);
 void getAlgorithm();
 void Start_Clk_Scheduler();
 void ReadFile();
-void IPC();
+void IPC(struct PCB processToBeSent,int y);
+struct PriorityQueue sendingQueue;
 
-struct msgBuff
-{
-    long mtype;
-    struct PCB process;
-};
 
-int main(int argc, char * argv[])
-{
+int main(int argc, char * argv[]) {
     signal(SIGINT, clearResources);
     // TODO Initialization
     // 1. Read the input files.
@@ -33,70 +28,84 @@ int main(int argc, char * argv[])
     Start_Clk_Scheduler();
     // 4. Use this function after creating the clock process to initialize clock
     initClk();
-    IPC();
+    
     // To get time use this
     //sleep(10);
-    int x = getClk();
-    printf("current time is %d\n", x);
-
+   
        
     // TODO Generation Main Loop
     // 5. Create a data structure for processes and provide it with its parameters.
     // 6. Send the information to the scheduler at the appropriate time.
     // 7. Clear clock resources
-    while(1)
-    {
-    x = getClk();
-    printf("current time is %d\n", x);
-    sleep(1);
+    int x = getClk();
+    int i = 0;
+    int y;
+    struct PCB processToBeSent;
+    while(sendingQueue.head) {  // should loop on the input queue
+        y= getClk();
+        DeQueue(&sendingQueue,&processToBeSent);
+        if (processToBeSent.ArrTime <= y-x) {
+            IPC(processToBeSent,y);
+            printf("current time is %d\n", getClk());
+        }
+         
+       // printf("current time is %d     i=%d\n", y-x,i);
+        //sleep(1);
     }
+    printf("Process generator finishes its work\n");
     destroyClk(true);
 }
 
-void ReadFile()
-{
+ 
+void ReadFile() {
     //array of process
-    a=713;
-    b=3;
-    c=5;
-    d=4;
-    setPCB(&processToBeSent,a,b,c,d);
-}
-void IPC()
-{
-    int upQId = msgget(1234, 0666 | IPC_CREAT);
+    initializeQueue(&sendingQueue);
+    struct PCB p1;
+    struct PCB p2;
+    struct PCB p3;
+    struct PCBNode processNode1;
+    struct PCBNode processNode2;
+    struct PCBNode processNode3;
+    setPCB(&p1,0,1,2,1);
+    processNode1 = GenerateNode(p1);
+    InsertAccordingToArrivalTime(&sendingQueue,&processNode1);
+    setPCB(&p2,1,3,4,2);
+    processNode2 = GenerateNode(p2);
+    InsertAccordingToArrivalTime(&sendingQueue,&processNode2);
+    setPCB(&p3,2,5,6,3);
+    processNode3 = GenerateNode(p3);
+    InsertAccordingToArrivalTime(&sendingQueue,&processNode3);
 
-    if (upQId == -1){
+}
+void IPC(struct PCB processToBeSent, int t) {
+    int pGeneratorToScheduler = msgget(1234, 0666 | IPC_CREAT);
+    if (pGeneratorToScheduler == -1){
         perror("error in creat");
         exit(-1);
     }
     struct msgBuff processInfo;
     processInfo.mtype = getpid()%10000;
     CopyPCB(&processInfo.process, processToBeSent);
-    int val = msgsnd(upQId, &processInfo, sizeof(processInfo.process), IPC_NOWAIT);
+    int val = msgsnd(pGeneratorToScheduler, &processInfo, sizeof(processInfo.process), IPC_NOWAIT);
     if (val == -1)
         printf("Error in send");
-    printf("The send process if is %d\n",processInfo.process.id);
+   // printf("at time %d A process with id %d has been sent\n",t,processInfo.process.id);
 }
-void clearResources(int signum)
-{
+void clearResources(int signum) {
     //TODO Clears all resources in case of interruption
 }
 
-void getAlgorithm()
-{
+void getAlgorithm() {
     printf("Choose the prefered Algorithm....\n");
     printf("1. HPF \n2. SRTN \n3. RR\n");
     scanf("%d", &Algo);
 
-    while (!(Algo==1||Algo==2||Algo==3))
-    {
+    while (!(Algo==1||Algo==2||Algo==3)) {
         printf("Choose A valid Number....\n");
         scanf("%d", &Algo);
         sleep(3);
     }
-    if (Algo==3)
-    {
+    if (Algo==3) {
         printf("Enter the quantum time....\n");
         scanf("%d", &time_quantum);
     }
@@ -108,27 +117,21 @@ void getAlgorithm()
 
 }
 
-void Start_Clk_Scheduler()
-{
+void Start_Clk_Scheduler() {
  int pid;
- for (int i=0;i<2;i++)
- {
+ for (int i=0;i<2;i++) {
      pid= fork();
-     if (pid==0)
-     {
-        if (i==0)
-        {
-            printf("CLK forking...\n");
+     if (pid==0) {
+        if (i==0) {
+           // printf("CLK forking...\n");
             execv("./clk.out",NULL);
             //sleep(10);
         }
-        else
-        {
-            printf("scheduler forking...\n");
-            char SendAlgo =Algo + '0';
-            char * cSendAlgo = &SendAlgo;
-            char SendTime_quantum =time_quantum + '0';
-            char * cSendTime_quantum = &SendTime_quantum;
+        else{
+            char cSendAlgo[10];
+            char cSendTime_quantum[10];
+            sprintf(cSendAlgo,"%d",Algo);
+            sprintf(cSendTime_quantum,"%d",time_quantum);
             char* scheduler_arg_list[]={"./scheduler.out",cSendAlgo,cSendTime_quantum,0};
             execve(scheduler_arg_list[0],scheduler_arg_list,NULL); // all the processes should be sent by execve
         }

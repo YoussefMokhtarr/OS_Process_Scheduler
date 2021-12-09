@@ -1,5 +1,8 @@
 {
     "files.associations": {
-        "headers.h": "c"
+        "headers.h": "c",
+        "priorityqueue.h": "c",
+        "pcb.h": "c",
+        "wait.h": "c"
     }
 }
