@@ -94,27 +94,14 @@ void HPF() {  // check the return type of the alogrithms
         }
         struct msgBuff processInfo;
         if (c<maxCount){
+            
             val = msgrcv(pGeneratorToScheduler, &processInfo, sizeof(processInfo.process), 0, !IPC_NOWAIT);   // ...........
-
-           
-        if (c<maxCount && val != -1)
-        {
-            CopyPCB(&tempProcess,processInfo.process);
-           // processNode = GenerateNode(tempProcess);
-            AddAccordingToPriority(&HPF_Ready,tempProcess);
-            c++;
-        }
-        
-        /*struct PCBNode* next = HPF_Ready.head;
-        printf("Que: ");
-        while(next != NULL)
-        {
-            printf("%d\t",next->pcb.id);
-            next = next->next;
-        }
-        printf("\n");*/
-        //tempProcess = IPC();
-        //return recievedProcess;
+            if (c<maxCount && val != -1)
+            {
+                CopyPCB(&tempProcess,processInfo.process);
+                AddAccordingToPriority(&HPF_Ready,tempProcess);
+                c++;
+            }
         }
         
        // printf("A process with id %d enqued in Queue with head%d\n",processNode.pcb.id, HPF_Ready.head->pcb.id);
@@ -123,11 +110,12 @@ void HPF() {  // check the return type of the alogrithms
         {
             if(schProcess.id != -1)
             {
-                printf("At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %d\n",getClk(),schProcess.id,schProcess.ArrTime,schProcess.RunTime,0,schProcess.WaitTime,getClk()-(schProcess.ArrTime),(getClk()-(schProcess.ArrTime))/schProcess.RunTime);
+                printf("At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n",getClk(),schProcess.id,schProcess.ArrTime,schProcess.RunTime,0,schProcess.WaitTime,getClk()-(schProcess.ArrTime),(double)(getClk()-(schProcess.ArrTime))/schProcess.RunTime);
                 pDone++;  
             }
             DeQueue(&HPF_Ready,&schProcess);
             schProcess.startTime=getClk();
+            IncreaseWaitTime(&schProcess,schProcess.startTime - schProcess.ArrTime);
             // print the process details hereeeeeeeeeeeeeeeeeeeeeeeeeee
             printf("At time %d process %d started arr %d total %d remain %d wait %d \n",getClk(),schProcess.id,schProcess.ArrTime,schProcess.RunTime,schProcess.RunTime,schProcess.WaitTime);
             Run(&schProcess);  

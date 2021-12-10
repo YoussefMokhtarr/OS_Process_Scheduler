@@ -49,9 +49,30 @@ int main(int argc, char * argv[]) {
         if (processToBeSent.ArrTime <= y-x) {
             //printf("current time is %d\n", getClk());
            // printf("current ID of the process to be sent%d at time %d\n",processToBeSent.id, getClk());
-            DeQueue(&que,&processToBeSent);
+           struct PriorityQueue newQue;
+           initializeQueue(&newQue);
+           while(que.head!= NULL && que.head->pcb.ArrTime <= y - x)
+           { 
+                DeQueue(&que,&processToBeSent);
+                if(Algo == 1)
+                {
+                    AddAccordingToPriority(&newQue,processToBeSent);
+                }
+                else if(Algo == 2)
+                {
+                    AddAccordingToRemainingTime(&newQue,processToBeSent);
+                }
+                else
+                {
+                    Add(&newQue,processToBeSent);
+                }
+           }
           //  printf("current ID of the process after%d\n",processToBeSent.id);
-            IPC(processToBeSent);
+            while(newQue.head != NULL)
+            {
+                DeQueue(&newQue,&processToBeSent);
+                IPC(processToBeSent);
+            }
             
             //sleep(5);
         }
