@@ -1,6 +1,6 @@
-//#include "headers.h"
+#include "headers.h"
 //#include "PCB.h"
-#include"PriorityQueue.h"
+
 //data
 #define hpf_Algo 1
 #define strn_Algo 2
@@ -21,12 +21,39 @@ void handler1();
 
 
 int main(int argc, char * argv[]) {
-    initClk();
     signal (SIGUSR1,handler1);
+    
+    
     //Algo=argv[1][0]-'0';
     //time_quantum=argv[2][0]-'0';
     Algo=atoi(argv[1]);
     time_quantum=atoi(argv[2]);
+    initClk();
+    __clock_t x=getClk();
+    
+ while (1) {
+        /* __clock_t y=getClk();
+         while (y-x==0)
+         {
+             y=getClk();
+         }
+        x=y;*/
+        int pGeneratorToScheduler = msgget(1234, 0666 | IPC_CREAT);
+        if (pGeneratorToScheduler == -1){
+            perror("error in creat\n");
+            exit(-1);
+        }
+        struct msgBuff processInfo;
+        int val = msgrcv(pGeneratorToScheduler, &processInfo, sizeof(processInfo.process), 10, !IPC_NOWAIT); 
+        if (val==-1)
+           printf("error in recieving..\n");
+        printf("The reiceved process id is %d at time %d\n",processInfo.process.id,getClk());
+
+        }
+       
+
+/*
+
     switch (Algo) {
     case hpf_Algo:
         HPF();
@@ -39,9 +66,9 @@ int main(int argc, char * argv[]) {
         break;
     }
     printf("Scheduler finishes its work\n");
-    destroyClk(true);
+    destroyClk(true);*/
 }
-/*
+
 struct PCB IPC() {
     struct PCB recievedProcess;
     int pGeneratorToScheduler = msgget(1234, 0666 | IPC_CREAT);
@@ -55,15 +82,15 @@ struct PCB IPC() {
         printf("Error in recieve");
     CopyPCB(&recievedProcess,processInfo.process);
     return recievedProcess;
-}*/
+}
 
 void HPF() {  // check the return type of the alogrithms
-    //printf("The user chose to run HPF\n");
+    
     isRunning=false;
     struct PriorityQueue HPF_Ready;
     initializeQueue(&HPF_Ready);
-    int x= getClk();
-    int count = 3; /// should be the number of processes
+    __clock_t x= getClk();
+    int count = 6; /// should be the number of processes
     struct PCB tempProcess;
     struct PCBNode processNode;
     struct PCB schProcess;
@@ -76,14 +103,14 @@ void HPF() {  // check the return type of the alogrithms
         }
         struct msgBuff processInfo;
         if (count>0){
-            val = msgrcv(pGeneratorToScheduler, &processInfo, sizeof(processInfo.process), 0, !IPC_NOWAIT);
+            val = msgrcv(pGeneratorToScheduler, &processInfo, sizeof(processInfo.process), 0, IPC_NOWAIT);   // ...........
 
            
         if (count>0 && val != -1)
         {
             CopyPCB(&tempProcess,processInfo.process);
-            processNode = GenerateNode(tempProcess);
-            InsertAccordingToPriority(&HPF_Ready,&processNode);
+           // processNode = GenerateNode(tempProcess);
+            AddAccordingToPriority(&HPF_Ready,tempProcess);
             count--;
         }
         if (val==-1)
@@ -91,12 +118,11 @@ void HPF() {  // check the return type of the alogrithms
         
         //tempProcess = IPC();
         //return recievedProcess;
-
         }
         
        // printf("A process with id %d enqued in Queue with head%d\n",processNode.pcb.id, HPF_Ready.head->pcb.id);
 
-         if (HPF_Ready.head!=NULL) 
+        if (HPF_Ready.head!=NULL) 
         {
             DeQueue(&HPF_Ready,&schProcess);
             schProcess.startTime=getClk();

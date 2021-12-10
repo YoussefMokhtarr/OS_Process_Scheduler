@@ -1,4 +1,4 @@
-#include "PriorityQueue.h"
+#include "headers.h"
 //#include "PCB.h"
 
 //variables 
@@ -10,10 +10,12 @@ int a,b,c,d;
 struct PCB processArr[3];
 //functions
 void clearResources(int);
+struct PriorityQueue que;
+struct PCB processToBeSent;
 void getAlgorithm();
 void Start_Clk_Scheduler();
 void ReadFile();
-void IPC(struct PCB processToBeSent,int y);
+void IPC(struct PCB processToBeSent);
 struct PriorityQueue sendingQueue;
 
 
@@ -37,58 +39,83 @@ int main(int argc, char * argv[]) {
     // 5. Create a data structure for processes and provide it with its parameters.
     // 6. Send the information to the scheduler at the appropriate time.
     // 7. Clear clock resources
-    int x = getClk();
+    __clock_t  x = getClk();
     int i = 0;
-    int y;
-    struct PCB processToBeSent;
-    while(sendingQueue.head) {  // should loop on the input queue
-        y= getClk();
-        DeQueue(&sendingQueue,&processToBeSent);
+   // __clock_t  y;
+    
+    while(que.head !=NULL) {  // should loop on the input queue
+      __clock_t  y= getClk();
+        processToBeSent=que.head->pcb;
         if (processToBeSent.ArrTime <= y-x) {
-            IPC(processToBeSent,y);
-            printf("current time is %d\n", getClk());
+            //printf("current time is %d\n", getClk());
+           // printf("current ID of the process to be sent%d at time %d\n",processToBeSent.id, getClk());
+            DeQueue(&que,&processToBeSent);
+          //  printf("current ID of the process after%d\n",processToBeSent.id);
+            IPC(processToBeSent);
+            
+            //sleep(5);
         }
          
        // printf("current time is %d     i=%d\n", y-x,i);
         //sleep(1);
     }
-    printf("Process generator finishes its work\n");
+    //printf("Process generator finishes its work\n");
+    while (1)
+    {
+
+    }
     destroyClk(true);
 }
 
  
-void ReadFile() {
-    //array of process
-    initializeQueue(&sendingQueue);
-    struct PCB p1;
-    struct PCB p2;
-    struct PCB p3;
-    struct PCBNode processNode1;
-    struct PCBNode processNode2;
-    struct PCBNode processNode3;
-    setPCB(&p1,0,1,2,1);
-    processNode1 = GenerateNode(p1);
-    enQueue(&sendingQueue,&processNode1);
-    setPCB(&p2,1,3,4,2);
-    processNode2 = GenerateNode(p2);
-    enQueue(&sendingQueue,&processNode2);
-    setPCB(&p3,2,5,6,3);
-    processNode3 = GenerateNode(p3);
-    enQueue(&sendingQueue,&processNode3);
-
+void ReadFile()
+{
+    int id;
+    int arrivalTime;
+    int runningTime;
+    int priority;
+    FILE *process = fopen("process.txt", "r");
+    if (process == NULL)
+    {
+        printf("Error! File cannot be opened.");
+        exit(1);
+    }
+    while (1)
+    {
+        char ignoredCharacter[1000];
+        fscanf(process, "%s", ignoredCharacter);
+        {
+            if (*ignoredCharacter == '#')
+            {
+                fgets(ignoredCharacter, sizeof(ignoredCharacter), process);
+                continue;
+            }
+            else
+            {
+                id = atoi(ignoredCharacter);
+                fscanf(process, "%d %d %d", &arrivalTime, &runningTime, &priority);
+                if (feof(process))
+                    break;
+                setPCB(&processToBeSent, id, arrivalTime, runningTime, priority);
+                //printf("id %d, Arr time %d, Running time %d, Priority %d \n", processToBeSent.id, processToBeSent.ArrTime, processToBeSent.RunTime, processToBeSent.Priority);
+                AddAccordingToArrivalTime(&que,processToBeSent);
+            }
+        }
+    }
+    fclose(process);
 }
-void IPC(struct PCB processToBeSent, int t) {
+void IPC(struct PCB processToBeSent) {
     int pGeneratorToScheduler = msgget(1234, 0666 | IPC_CREAT);
     if (pGeneratorToScheduler == -1){
         perror("error in creat");
         exit(-1);
     }
     struct msgBuff processInfo;
-    processInfo.mtype = getpid()%10000;
+    processInfo.mtype = 10;
     CopyPCB(&processInfo.process, processToBeSent);
     int val = msgsnd(pGeneratorToScheduler, &processInfo, sizeof(processInfo.process), IPC_NOWAIT);
     if (val == -1)
-        printf("Error in send");
+        printf("Error in send process\n");
    // printf("at time %d A process with id %d has been sent\n",t,processInfo.process.id);
 }
 void clearResources(int signum) {
@@ -123,11 +150,12 @@ void Start_Clk_Scheduler() {
      pid= fork();
      if (pid==0) {
         if (i==0) {
-           // printf("CLK forking...\n");
+            printf("CLK forking...\n");
             execv("./clk.out",NULL);
             //sleep(10);
         }
         else{
+            printf("scheduler forking...\n");
             char cSendAlgo[10];
             char cSendTime_quantum[10];
             sprintf(cSendAlgo,"%d",Algo);
