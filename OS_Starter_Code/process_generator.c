@@ -64,7 +64,7 @@ int main(int argc, char * argv[]) {
     {
 
     }
-    destroyClk(true);
+    
 }
 
  
@@ -120,6 +120,9 @@ void IPC(struct PCB processToBeSent) {
 }
 void clearResources(int signum) {
     //TODO Clears all resources in case of interruption
+    
+    destroyClk(true);
+    exit(0);
 }
 
 void getAlgorithm() {
@@ -158,9 +161,11 @@ void Start_Clk_Scheduler() {
             printf("scheduler forking...\n");
             char cSendAlgo[10];
             char cSendTime_quantum[10];
+            char parentID[10];
             sprintf(cSendAlgo,"%d",Algo);
             sprintf(cSendTime_quantum,"%d",time_quantum);
-            char* scheduler_arg_list[]={"./scheduler.out",cSendAlgo,cSendTime_quantum,0};
+            sprintf(parentID,"%d",getppid());
+            char* scheduler_arg_list[]={"./scheduler.out",cSendAlgo,cSendTime_quantum,parentID,0};
             execve(scheduler_arg_list[0],scheduler_arg_list,NULL); // all the processes should be sent by execve
         }
      }

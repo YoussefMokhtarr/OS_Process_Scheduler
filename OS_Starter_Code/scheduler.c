@@ -28,9 +28,10 @@ int main(int argc, char * argv[]) {
     //time_quantum=argv[2][0]-'0';
     Algo=atoi(argv[1]);
     time_quantum=atoi(argv[2]);
+    int parentID = atoi(argv[3]);
     initClk();
     __clock_t x=getClk();
-    
+    int c=0;
  while (1) {
         /* __clock_t y=getClk();
          while (y-x==0)
@@ -47,10 +48,13 @@ int main(int argc, char * argv[]) {
         int val = msgrcv(pGeneratorToScheduler, &processInfo, sizeof(processInfo.process), 10, !IPC_NOWAIT); 
         if (val==-1)
            printf("error in recieving..\n");
+        else
+            c++;
         printf("The reiceved process id is %d at time %d\n",processInfo.process.id,getClk());
-
+        if (c ==6)
+            break;
         }
-       
+        kill(SIGINT,parentID);
 
 /*
 
@@ -64,9 +68,9 @@ int main(int argc, char * argv[]) {
     case rr_Algo:
         RR();
         break;
-    }
+    }*/
     printf("Scheduler finishes its work\n");
-    destroyClk(true);*/
+    destroyClk(true);
 }
 
 struct PCB IPC() {
