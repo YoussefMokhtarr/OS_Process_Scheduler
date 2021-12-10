@@ -68,13 +68,13 @@ void ReadFile() {
     struct PCBNode processNode3;
     setPCB(&p1,0,1,2,1);
     processNode1 = GenerateNode(p1);
-    InsertAccordingToArrivalTime(&sendingQueue,&processNode1);
+    enQueue(&sendingQueue,&processNode1);
     setPCB(&p2,1,3,4,2);
     processNode2 = GenerateNode(p2);
-    InsertAccordingToArrivalTime(&sendingQueue,&processNode2);
+    enQueue(&sendingQueue,&processNode2);
     setPCB(&p3,2,5,6,3);
     processNode3 = GenerateNode(p3);
-    InsertAccordingToArrivalTime(&sendingQueue,&processNode3);
+    enQueue(&sendingQueue,&processNode3);
 
 }
 void IPC(struct PCB processToBeSent, int t) {
