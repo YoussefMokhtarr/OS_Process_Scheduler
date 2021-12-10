@@ -23,7 +23,7 @@ int main(int agrc, char * argv[]) {
     int startTime=atoi(argv[7]);
     int endTime=atoi(argv[8]);
     remainingtime=RunTime;
-    int x=getClk();
+    __clock_t x=getClk();
 
     while (remainingtime > 0){
         if (x<getClk())

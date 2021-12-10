@@ -4,7 +4,7 @@
 //variables 
 int Algo; 
 int time_quantum;
-
+int count=0;
 //temp for input
 int a,b,c,d;
 struct PCB processArr[3];
@@ -67,7 +67,7 @@ int main(int argc, char * argv[]) {
     
 }
 
- 
+
 void ReadFile()
 {
     int id;
@@ -92,6 +92,7 @@ void ReadFile()
             }
             else
             {
+                
                 id = atoi(ignoredCharacter);
                 fscanf(process, "%d %d %d", &arrivalTime, &runningTime, &priority);
                 if (feof(process))
@@ -99,6 +100,7 @@ void ReadFile()
                 setPCB(&processToBeSent, id, arrivalTime, runningTime, priority);
                 //printf("id %d, Arr time %d, Running time %d, Priority %d \n", processToBeSent.id, processToBeSent.ArrTime, processToBeSent.RunTime, processToBeSent.Priority);
                 AddAccordingToArrivalTime(&que,processToBeSent);
+                count++;
             }
         }
     }
@@ -162,10 +164,12 @@ void Start_Clk_Scheduler() {
             char cSendAlgo[10];
             char cSendTime_quantum[10];
             char parentID[10];
+            char Pcount[10];
             sprintf(cSendAlgo,"%d",Algo);
             sprintf(cSendTime_quantum,"%d",time_quantum);
             sprintf(parentID,"%d",getppid());
-            char* scheduler_arg_list[]={"./scheduler.out",cSendAlgo,cSendTime_quantum,parentID,0};
+            sprintf(Pcount,"%d",count);
+            char* scheduler_arg_list[]={"./scheduler.out",cSendAlgo,cSendTime_quantum,parentID,Pcount,0};
             execve(scheduler_arg_list[0],scheduler_arg_list,NULL); // all the processes should be sent by execve
         }
      }

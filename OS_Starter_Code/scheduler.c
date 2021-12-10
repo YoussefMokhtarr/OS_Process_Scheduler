@@ -18,8 +18,8 @@ void handler1();
 //void IPC_send(struct PCB* processToRun);
 //struct PCB IPC_recieve();
 
-
-
+int maxCount;
+int parentID;
 int main(int argc, char * argv[]) {
     signal (SIGUSR1,handler1);
     
@@ -28,17 +28,13 @@ int main(int argc, char * argv[]) {
     //time_quantum=argv[2][0]-'0';
     Algo=atoi(argv[1]);
     time_quantum=atoi(argv[2]);
-    int parentID = atoi(argv[3]);
+     parentID = atoi(argv[3]);
     initClk();
     __clock_t x=getClk();
-    int c=0;
- while (1) {
-        /* __clock_t y=getClk();
-         while (y-x==0)
-         {
-             y=getClk();
-         }
-        x=y;*/
+   // int c=0;
+    maxCount =atoi(argv[4]);
+ /*while (1) {
+
         int pGeneratorToScheduler = msgget(1234, 0666 | IPC_CREAT);
         if (pGeneratorToScheduler == -1){
             perror("error in creat\n");
@@ -51,12 +47,12 @@ int main(int argc, char * argv[]) {
         else
             c++;
         printf("The reiceved process id is %d at time %d\n",processInfo.process.id,getClk());
-        if (c ==6)
+        if (c ==maxCount)
             break;
         }
-        kill(SIGINT,parentID);
+        kill(SIGINT,parentID);*/
 
-/*
+
 
     switch (Algo) {
     case hpf_Algo:
@@ -68,25 +64,12 @@ int main(int argc, char * argv[]) {
     case rr_Algo:
         RR();
         break;
-    }*/
+    }
     printf("Scheduler finishes its work\n");
     destroyClk(true);
 }
 
-struct PCB IPC() {
-    struct PCB recievedProcess;
-    int pGeneratorToScheduler = msgget(1234, 0666 | IPC_CREAT);
-    if (pGeneratorToScheduler == -1){
-        perror("error in creat\n");
-        exit(-1);
-    }
-    struct msgBuff processInfo;
-    int val = msgrcv(pGeneratorToScheduler, &processInfo, sizeof(processInfo.process), 0, !IPC_NOWAIT);
-    if (val == -1)
-        printf("Error in recieve");
-    CopyPCB(&recievedProcess,processInfo.process);
-    return recievedProcess;
-}
+
 
 void HPF() {  // check the return type of the alogrithms
     
@@ -94,11 +77,13 @@ void HPF() {  // check the return type of the alogrithms
     struct PriorityQueue HPF_Ready;
     initializeQueue(&HPF_Ready);
     __clock_t x= getClk();
-    int count = 6; /// should be the number of processes
+    int count = maxCount; /// should be the number of processes
     struct PCB tempProcess;
     struct PCBNode processNode;
     struct PCB schProcess;
     int val;
+    int c=0;
+    int pDone=0;
     while (1) {
         int pGeneratorToScheduler = msgget(1234, 0666 | IPC_CREAT);
         if (pGeneratorToScheduler == -1){
@@ -106,19 +91,17 @@ void HPF() {  // check the return type of the alogrithms
             exit(-1);
         }
         struct msgBuff processInfo;
-        if (count>0){
-            val = msgrcv(pGeneratorToScheduler, &processInfo, sizeof(processInfo.process), 0, IPC_NOWAIT);   // ...........
+        if (c<maxCount){
+            val = msgrcv(pGeneratorToScheduler, &processInfo, sizeof(processInfo.process), 0, !IPC_NOWAIT);   // ...........
 
            
-        if (count>0 && val != -1)
+        if (c<maxCount && val != -1)
         {
             CopyPCB(&tempProcess,processInfo.process);
            // processNode = GenerateNode(tempProcess);
             AddAccordingToPriority(&HPF_Ready,tempProcess);
-            count--;
+            c++;
         }
-        if (val==-1)
-            printf("Error in recieve\n");
         
         //tempProcess = IPC();
         //return recievedProcess;
@@ -141,10 +124,18 @@ void HPF() {  // check the return type of the alogrithms
             // aprocess has finished, print its details
             printf("At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %d\n",getClk(),schProcess.id,schProcess.ArrTime,schProcess.RunTime,0,schProcess.WaitTime,getClk()-(schProcess.ArrTime),(getClk()-(schProcess.ArrTime))/schProcess.RunTime);
             isRunning=true;
+            pDone++;        
+            }
+        
+        if (c ==maxCount) // all the processes has been recieved
+        kill(SIGINT,parentID);
+        if (pDone==maxCount)
+        {
+            printf("HPD finished\n"); // should print the file
+            break;
         }
-        // if all processes are done , print the log file .....count=0
     }
-    
+     
 }
 void Run(struct PCB* processToRun)
 {
@@ -176,6 +167,21 @@ void Run(struct PCB* processToRun)
     //struct PCB recievedProcess = IPC_recieve();
     //printf("at time =%d process with id %d finished with runtime time %d \n",getClk(),recievedProcess.id,recievedProcess.RunTime);
 }
+/*
+struct PCB IPC() {
+    struct PCB recievedProcess;
+    int pGeneratorToScheduler = msgget(1234, 0666 | IPC_CREAT);
+    if (pGeneratorToScheduler == -1){
+        perror("error in creat\n");
+        exit(-1);
+    }
+    struct msgBuff processInfo;
+    int val = msgrcv(pGeneratorToScheduler, &processInfo, sizeof(processInfo.process), 0, !IPC_NOWAIT);
+    if (val == -1)
+        printf("Error in recieve");
+    CopyPCB(&recievedProcess,processInfo.process);
+    return recievedProcess;
+}*/
 /*
 void IPC_send(struct PCB* processToRun)
     {
