@@ -116,6 +116,7 @@ void HPF() {  // check the return type of the alogrithms
             }
             DeQueue(&HPF_Ready,&schProcess);
             schProcess.startTime=getClk();
+            IncreaseWaitTime(&schProcess,schProcess.startTime - schProcess.ArrTime);
             // print the process details hereeeeeeeeeeeeeeeeeeeeeeeeeee
             printf("At time %d process %d started arr %d total %d remain %d wait %d \n",schProcess.startTime,schProcess.id,schProcess.ArrTime,schProcess.RunTime,schProcess.RunTime,schProcess.WaitTime);
             Run(&schProcess);  
@@ -125,10 +126,9 @@ void HPF() {  // check the return type of the alogrithms
         if (isRunning==false)
         {
             // aprocess has finished, print its details
-            //printf("At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %\n",getClk(),schProcess.id,schProcess.ArrTime,schProcess.RunTime,0,schProcess.WaitTime,getClk()-(schProcess.ArrTime),(getClk()-(schProcess.ArrTime))/schProcess.RunTime);
-            //isRunning=true;
+            printf("At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n",getClk(),schProcess.id,schProcess.ArrTime,schProcess.RunTime,schProcess.WaitTime,schProcess.WaitTime,getClk()-(schProcess.ArrTime),(double)(getClk()-(schProcess.ArrTime))/schProcess.RunTime);
             pDone++;        
-            }
+        }
         
         if (c ==maxCount) // all the processes has been recieved
         kill(SIGINT,parentID);
