@@ -21,6 +21,7 @@ void handler1();
 int maxCount;
 int parentID;
 int main(int argc, char * argv[]) {
+    
     signal (SIGUSR1,handler1);
     
     
@@ -30,6 +31,7 @@ int main(int argc, char * argv[]) {
     time_quantum=atoi(argv[2]);
      parentID = atoi(argv[3]);
     initClk();
+    //printf("startClk = %d\n",getClk());
     __clock_t x=getClk();
    // int c=0;
     maxCount =atoi(argv[4]);
@@ -72,7 +74,6 @@ int main(int argc, char * argv[]) {
 
 
 void HPF() {  // check the return type of the alogrithms
-    
     isRunning=false;
     struct PriorityQueue HPF_Ready;
     initializeQueue(&HPF_Ready);
@@ -81,6 +82,7 @@ void HPF() {  // check the return type of the alogrithms
     struct PCB tempProcess;
     struct PCBNode processNode;
     struct PCB schProcess;
+    schProcess.id = -1;
     int val;
     int c=0;
     int pDone=0;
@@ -103,27 +105,40 @@ void HPF() {  // check the return type of the alogrithms
             c++;
         }
         
+        /*struct PCBNode* next = HPF_Ready.head;
+        printf("Que: ");
+        while(next != NULL)
+        {
+            printf("%d\t",next->pcb.id);
+            next = next->next;
+        }
+        printf("\n");*/
         //tempProcess = IPC();
         //return recievedProcess;
         }
         
        // printf("A process with id %d enqued in Queue with head%d\n",processNode.pcb.id, HPF_Ready.head->pcb.id);
 
-        if (HPF_Ready.head!=NULL) 
+        if (HPF_Ready.head!=NULL && isRunning == false)  
         {
+            if(schProcess.id != -1)
+            {
+                printf("At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %d\n",getClk(),schProcess.id,schProcess.ArrTime,schProcess.RunTime,0,schProcess.WaitTime,getClk()-(schProcess.ArrTime),(getClk()-(schProcess.ArrTime))/schProcess.RunTime);
+                pDone++;  
+            }
             DeQueue(&HPF_Ready,&schProcess);
             schProcess.startTime=getClk();
             // print the process details hereeeeeeeeeeeeeeeeeeeeeeeeeee
             printf("At time %d process %d started arr %d total %d remain %d wait %d \n",getClk(),schProcess.id,schProcess.ArrTime,schProcess.RunTime,schProcess.RunTime,schProcess.WaitTime);
             Run(&schProcess);  
             //printf("A process with id %d dequed\n",schProcess.id);
-            //isRunning=true;
+            isRunning=true;
         }
         if (isRunning==false)
         {
             // aprocess has finished, print its details
             printf("At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %d\n",getClk(),schProcess.id,schProcess.ArrTime,schProcess.RunTime,0,schProcess.WaitTime,getClk()-(schProcess.ArrTime),(getClk()-(schProcess.ArrTime))/schProcess.RunTime);
-            isRunning=true;
+            //isRunning=true;
             pDone++;        
             }
         
@@ -162,6 +177,11 @@ void Run(struct PCB* processToRun)
         sprintf(endTime,"%d",processToRun->endTime);
         char* process_arg_list[]={"./process.out",id,arrTime,runTime,Priority,WaitTime,RemainingTime,startTime,endTime,runTime,0};
         execve(process_arg_list[0],process_arg_list,NULL); 
+    }
+    else
+    {
+         //printf("child pid = %d\n",pid);
+         processToRun->state = Running;
     }
    // IPC_send(processToRun);
     //struct PCB recievedProcess = IPC_recieve();

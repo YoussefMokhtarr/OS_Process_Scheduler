@@ -11,7 +11,7 @@ struct PCB IPC_recieve();*/
 
 int main(int agrc, char * argv[]) {
     initClk();
-    
+    //printf("mypid = %d\n",getpid());
     //TODO it needs to get the remaining time from somewhere
     //remainingtime = ??;
     int id =atoi(argv[1]);
@@ -36,7 +36,7 @@ int main(int agrc, char * argv[]) {
     endTime=getClk();
     kill(getppid(),SIGUSR1);
     // do the required modifications to recievedprocess paramaters
-    //destroyClk(false);
+    //destroyClk(true);
     
     return 0;
 }
