@@ -67,7 +67,6 @@ int main(int argc, char * argv[]) {
         RR();
         break;
     }
-    printf("Scheduler finishes its work\n");
     destroyClk(true);
 }
 
@@ -103,11 +102,10 @@ void HPF() {  // check the return type of the alogrithms
                 c++;
             }
         }
-        
-       // printf("A process with id %d enqued in Queue with head%d\n",processNode.pcb.id, HPF_Ready.head->pcb.id);
 
         if (HPF_Ready.head!=NULL && isRunning == false)  
         {
+            
             if(schProcess.id != -1)
             {
                 printf("At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n",getClk(),schProcess.id,schProcess.ArrTime,schProcess.RunTime,0,schProcess.WaitTime,getClk()-(schProcess.ArrTime),(double)(getClk()-(schProcess.ArrTime))/schProcess.RunTime);
@@ -117,7 +115,7 @@ void HPF() {  // check the return type of the alogrithms
             schProcess.startTime=getClk();
             IncreaseWaitTime(&schProcess,schProcess.startTime - schProcess.ArrTime);
             // print the process details hereeeeeeeeeeeeeeeeeeeeeeeeeee
-            printf("At time %d process %d started arr %d total %d remain %d wait %d \n",getClk(),schProcess.id,schProcess.ArrTime,schProcess.RunTime,schProcess.RunTime,schProcess.WaitTime);
+            printf("At time %d process %d started arr %d total %d remain %d wait %d \n",schProcess.startTime,schProcess.id,schProcess.ArrTime,schProcess.RunTime,schProcess.RunTime,schProcess.WaitTime);
             Run(&schProcess);  
             //printf("A process with id %d dequed\n",schProcess.id);
             isRunning=true;
@@ -125,7 +123,7 @@ void HPF() {  // check the return type of the alogrithms
         if (isRunning==false)
         {
             // aprocess has finished, print its details
-            printf("At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %d\n",getClk(),schProcess.id,schProcess.ArrTime,schProcess.RunTime,0,schProcess.WaitTime,getClk()-(schProcess.ArrTime),(getClk()-(schProcess.ArrTime))/schProcess.RunTime);
+            printf("At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n",getClk(),schProcess.id,schProcess.ArrTime,schProcess.RunTime,0,schProcess.WaitTime,getClk()-(schProcess.ArrTime),(double)(getClk()-(schProcess.ArrTime))/schProcess.RunTime);
             //isRunning=true;
             pDone++;        
             }
@@ -134,7 +132,7 @@ void HPF() {  // check the return type of the alogrithms
         kill(SIGINT,parentID);
         if (pDone==maxCount)
         {
-            printf("HPD finished\n"); // should print the file
+            // should print the file
             break;
         }
     }
