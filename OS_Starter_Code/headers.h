@@ -11,7 +11,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include "PriorityQueue.h"
-
+#include <math.h>
 typedef short bool;
 #define true 1
 #define false 0

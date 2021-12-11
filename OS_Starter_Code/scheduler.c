@@ -15,47 +15,29 @@ void RR();
 struct PCB IPC();
 void Run(struct PCB* processToRun);
 void handler1();
-//void IPC_send(struct PCB* processToRun);
-//struct PCB IPC_recieve();
-
+FILE* SchedulerLog;
+FILE* SchedulerPerf;
 int maxCount;
 int parentID;
+double* WTA ;
+double* Wait ;
+double* totalRun;
 int main(int argc, char * argv[]) {
     
     signal (SIGUSR1,handler1);
-    
-    
-    //Algo=argv[1][0]-'0';
-    //time_quantum=argv[2][0]-'0';
     Algo=atoi(argv[1]);
     time_quantum=atoi(argv[2]);
-     parentID = atoi(argv[3]);
-    initClk();
-    //printf("startClk = %d\n",getClk());
-    __clock_t x=getClk();
-   // int c=0;
+    parentID = atoi(argv[3]);
     maxCount =atoi(argv[4]);
- /*while (1) {
+    WTA = calloc(maxCount,sizeof(double));
+    Wait = calloc(maxCount,sizeof(double));
+    totalRun = calloc(maxCount,sizeof(double));
 
-        int pGeneratorToScheduler = msgget(1234, 0666 | IPC_CREAT);
-        if (pGeneratorToScheduler == -1){
-            perror("error in creat\n");
-            exit(-1);
-        }
-        struct msgBuff processInfo;
-        int val = msgrcv(pGeneratorToScheduler, &processInfo, sizeof(processInfo.process), 10, !IPC_NOWAIT); 
-        if (val==-1)
-           printf("error in recieving..\n");
-        else
-            c++;
-        printf("The reiceved process id is %d at time %d\n",processInfo.process.id,getClk());
-        if (c ==maxCount)
-            break;
-        }
-        kill(SIGINT,parentID);*/
+    initClk();
+    __clock_t x=getClk();
+    
 
-
-
+    SchedulerLog = fopen("scheduler.log", "w");
     switch (Algo) {
     case hpf_Algo:
         HPF();
@@ -67,12 +49,134 @@ int main(int argc, char * argv[]) {
         RR();
         break;
     }
+
+    //printing Log File
+    fclose(SchedulerLog);
+    double avgWait =0;
+    double avgWTA=0;
+    double CPUperf=0;
+    double std=0.0;
+    for (int i=0; i<maxCount ; i++)
+    {
+        avgWait += Wait[i];
+        avgWTA += WTA[i];
+        CPUperf+=totalRun[i];
+    }
+
+    avgWTA=avgWTA/maxCount;
+    avgWait=avgWait/maxCount;
+   for (int i=0; i<maxCount ; i++)
+    {
+        std += pow((WTA[i]-avgWTA),2);
+    }
+    std =sqrt(std/maxCount);
+   // printf("total run time = %f\n",CPUperf);
+  //  printf("Last clock equals %d\n",getClk());
+    CPUperf= (CPUperf+1)/getClk();
+    SchedulerPerf = fopen("scheduler.perf", "w");
+    fprintf(SchedulerPerf,"# The running algorithm is : HPF\n");
+    fprintf(SchedulerPerf,"CPU utilization = %.2f%%\n",CPUperf*100);
+    fprintf(SchedulerPerf,"Avg WTA = %.2f\n",avgWTA);
+    fprintf(SchedulerPerf,"Avg waiting = %.2f\n",avgWait);
+    fprintf(SchedulerPerf,"Std WTA = %.2f\n",std);
+    fclose(SchedulerPerf);
+
     destroyClk(true);
 }
 
 
 
+void STRN() {
+    
+    fprintf(SchedulerLog,"# The running algorithm is : SRTN\n");
+    fprintf(SchedulerLog,"# At time x process y started arr z total w remain u wait v \n");
+
+    isRunning=false;
+    struct PriorityQueue SRTN_Ready;
+    initializeQueue(&SRTN_Ready);
+    __clock_t x= getClk();
+    int count = maxCount; /// should be the number of processes
+    struct PCB tempProcess;
+    struct PCBNode processNode;
+    struct PCB schProcess;
+    schProcess.id = -1;
+    int val;
+    int c=0;
+    int pDone=0;
+    while (1) {
+        int pGeneratorToScheduler = msgget(1234, 0666 | IPC_CREAT);
+        if (pGeneratorToScheduler == -1){
+            perror("error in creat\n");
+            exit(-1);
+        }
+        struct msgBuff processInfo;
+        if (c<maxCount){
+            val = msgrcv(pGeneratorToScheduler, &processInfo, sizeof(processInfo.process), 0, !IPC_NOWAIT);   // ...........
+            if (c<maxCount && val != -1)
+            {
+                CopyPCB(&tempProcess,processInfo.process);
+                AddAccordingToRemainingTime(&SRTN_Ready,tempProcess);
+                c++;
+            }
+        }
+
+        if (SRTN_Ready.head!=NULL && isRunning == false)  
+        {
+            
+            if(schProcess.id != -1)
+            {
+                //printf("At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n",getClk(),schProcess.id,schProcess.ArrTime,schProcess.RunTime,0,schProcess.WaitTime,getClk()-(schProcess.ArrTime),(double)(getClk()-(schProcess.ArrTime))/schProcess.RunTime);
+                fprintf(SchedulerLog,"At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n",getClk(),schProcess.id,schProcess.ArrTime,schProcess.RunTime,0,schProcess.WaitTime,getClk()-(schProcess.ArrTime),(double)(getClk()-(schProcess.ArrTime))/schProcess.RunTime);
+                WTA[pDone]=(double)(getClk()-(schProcess.ArrTime))/schProcess.RunTime;
+                Wait[pDone]=schProcess.WaitTime;
+                totalRun[pDone]=schProcess.RunTime;
+                pDone++;  
+            }
+            DeQueue(&SRTN_Ready,&schProcess);
+            schProcess.startTime=getClk();
+            IncreaseWaitTime(&schProcess,schProcess.startTime - schProcess.ArrTime);
+            //printf("At time %d process %d started arr %d total %d remain %d wait %d \n",schProcess.startTime,schProcess.id,schProcess.ArrTime,schProcess.RunTime,schProcess.RunTime,schProcess.WaitTime);
+            fprintf(SchedulerLog,"At time %d process %d started arr %d total %d remain %d wait %d \n",schProcess.startTime,schProcess.id,schProcess.ArrTime,schProcess.RunTime,schProcess.RunTime,schProcess.WaitTime);
+
+            Run(&schProcess);  
+            isRunning=true;
+        }
+        if (isRunning==false)
+        {
+            // aprocess has finished, print its details
+           // printf("At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n",getClk(),schProcess.id,schProcess.ArrTime,schProcess.RunTime,0,schProcess.WaitTime,getClk()-(schProcess.ArrTime),(double)(getClk()-(schProcess.ArrTime))/schProcess.RunTime);
+            fprintf(SchedulerLog,"At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n",getClk(),schProcess.id,schProcess.ArrTime,schProcess.RunTime,0,schProcess.WaitTime,getClk()-(schProcess.ArrTime),(double)(getClk()-(schProcess.ArrTime))/schProcess.RunTime);
+            WTA[pDone]=(double)(getClk()-(schProcess.ArrTime))/schProcess.RunTime;
+            Wait[pDone]=schProcess.WaitTime;
+            totalRun[pDone]=schProcess.RunTime;
+            pDone++;        
+        }
+        
+        if (c ==maxCount) // all the processes has been recieved
+        kill(SIGINT,parentID);
+        if (pDone==maxCount)
+        {
+             // should print the file
+            break;
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
 void HPF() {  // check the return type of the alogrithms
+    fprintf(SchedulerLog,"# The running algorithm is : HPF\n");
+    fprintf(SchedulerLog,"# At time x process y started arr z total w remain u wait v \n");
+
     isRunning=false;
     struct PriorityQueue HPF_Ready;
     initializeQueue(&HPF_Ready);
@@ -108,24 +212,30 @@ void HPF() {  // check the return type of the alogrithms
             
             if(schProcess.id != -1)
             {
-                printf("At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n",getClk(),schProcess.id,schProcess.ArrTime,schProcess.RunTime,0,schProcess.WaitTime,getClk()-(schProcess.ArrTime),(double)(getClk()-(schProcess.ArrTime))/schProcess.RunTime);
+                //printf("At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n",getClk(),schProcess.id,schProcess.ArrTime,schProcess.RunTime,0,schProcess.WaitTime,getClk()-(schProcess.ArrTime),(double)(getClk()-(schProcess.ArrTime))/schProcess.RunTime);
+                fprintf(SchedulerLog,"At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n",getClk(),schProcess.id,schProcess.ArrTime,schProcess.RunTime,0,schProcess.WaitTime,getClk()-(schProcess.ArrTime),(double)(getClk()-(schProcess.ArrTime))/schProcess.RunTime);
+                WTA[pDone]=(double)(getClk()-(schProcess.ArrTime))/schProcess.RunTime;
+                Wait[pDone]=schProcess.WaitTime;
+                totalRun[pDone]=schProcess.RunTime;
                 pDone++;  
             }
             DeQueue(&HPF_Ready,&schProcess);
             schProcess.startTime=getClk();
             IncreaseWaitTime(&schProcess,schProcess.startTime - schProcess.ArrTime);
-            // print the process details hereeeeeeeeeeeeeeeeeeeeeeeeeee
-            printf("At time %d process %d started arr %d total %d remain %d wait %d \n",schProcess.startTime,schProcess.id,schProcess.ArrTime,schProcess.RunTime,schProcess.RunTime,schProcess.WaitTime);
+            //printf("At time %d process %d started arr %d total %d remain %d wait %d \n",schProcess.startTime,schProcess.id,schProcess.ArrTime,schProcess.RunTime,schProcess.RunTime,schProcess.WaitTime);
+            fprintf(SchedulerLog,"At time %d process %d started arr %d total %d remain %d wait %d \n",schProcess.startTime,schProcess.id,schProcess.ArrTime,schProcess.RunTime,schProcess.RunTime,schProcess.WaitTime);
+
             Run(&schProcess);  
-            //printf("A process with id %d dequed\n",schProcess.id);
             isRunning=true;
         }
         if (isRunning==false)
         {
             // aprocess has finished, print its details
-            printf("At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n",getClk(),schProcess.id,schProcess.ArrTime,schProcess.RunTime,schProcess.WaitTime,schProcess.WaitTime,getClk()-(schProcess.ArrTime),(double)(getClk()-(schProcess.ArrTime))/schProcess.RunTime);
-            printf("At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n",getClk(),schProcess.id,schProcess.ArrTime,schProcess.RunTime,0,schProcess.WaitTime,getClk()-(schProcess.ArrTime),(double)(getClk()-(schProcess.ArrTime))/schProcess.RunTime);
-            //isRunning=true;
+           // printf("At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n",getClk(),schProcess.id,schProcess.ArrTime,schProcess.RunTime,0,schProcess.WaitTime,getClk()-(schProcess.ArrTime),(double)(getClk()-(schProcess.ArrTime))/schProcess.RunTime);
+            fprintf(SchedulerLog,"At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n",getClk(),schProcess.id,schProcess.ArrTime,schProcess.RunTime,0,schProcess.WaitTime,getClk()-(schProcess.ArrTime),(double)(getClk()-(schProcess.ArrTime))/schProcess.RunTime);
+            WTA[pDone]=(double)(getClk()-(schProcess.ArrTime))/schProcess.RunTime;
+            Wait[pDone]=schProcess.WaitTime;
+            totalRun[pDone]=schProcess.RunTime;
             pDone++;        
         }
         
@@ -133,7 +243,7 @@ void HPF() {  // check the return type of the alogrithms
         kill(SIGINT,parentID);
         if (pDone==maxCount)
         {
-            // should print the file
+             // should print the file
             break;
         }
     }
@@ -220,9 +330,7 @@ struct PCB IPC_recieve()
     CopyPCB(&recievedProcess,processInfo.process);
     return recievedProcess;
 }*/
-void STRN() {
-    printf("The user chose to run STRN\n");
-}
+
 void RR() {
     printf("The user chose to run RR\n");   
 }
