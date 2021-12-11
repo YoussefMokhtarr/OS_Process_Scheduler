@@ -93,17 +93,14 @@ void HPF() {  // check the return type of the alogrithms
         }
         struct msgBuff processInfo;
         if (c<maxCount){
+            
             val = msgrcv(pGeneratorToScheduler, &processInfo, sizeof(processInfo.process), 0, !IPC_NOWAIT);   // ...........
-
-           
-        if (c<maxCount && val != -1)
-        {
-            CopyPCB(&tempProcess,processInfo.process);
-           // processNode = GenerateNode(tempProcess);
-            AddAccordingToPriority(&HPF_Ready,tempProcess);
-            c++;
-        }
-        
+            if (c<maxCount && val != -1)
+            {
+                CopyPCB(&tempProcess,processInfo.process);
+                AddAccordingToPriority(&HPF_Ready,tempProcess);
+                c++;
+            }
         }
 
         if (HPF_Ready.head!=NULL && isRunning == false)  
@@ -127,6 +124,8 @@ void HPF() {  // check the return type of the alogrithms
         {
             // aprocess has finished, print its details
             printf("At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n",getClk(),schProcess.id,schProcess.ArrTime,schProcess.RunTime,schProcess.WaitTime,schProcess.WaitTime,getClk()-(schProcess.ArrTime),(double)(getClk()-(schProcess.ArrTime))/schProcess.RunTime);
+            printf("At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n",getClk(),schProcess.id,schProcess.ArrTime,schProcess.RunTime,0,schProcess.WaitTime,getClk()-(schProcess.ArrTime),(double)(getClk()-(schProcess.ArrTime))/schProcess.RunTime);
+            //isRunning=true;
             pDone++;        
         }
         
