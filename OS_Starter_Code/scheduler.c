@@ -278,6 +278,7 @@ void Run(struct PCB* processToRun)
     else
     {
          //printf("child pid = %d\n",pid);
+         processToRun->PID = pid;
          processToRun->state = Running;
     }
    // IPC_send(processToRun);
