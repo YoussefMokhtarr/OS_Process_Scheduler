@@ -103,12 +103,12 @@ void STRN() {
     int val;
     int c=0;
     int pDone=0;
+    int pGeneratorToScheduler = msgget(1234, 0666 | IPC_CREAT);
+    if (pGeneratorToScheduler == -1){
+        perror("error in creat\n");
+        exit(-1);
+    }
     while (1) {
-        int pGeneratorToScheduler = msgget(1234, 0666 | IPC_CREAT);
-        if (pGeneratorToScheduler == -1){
-            perror("error in creat\n");
-            exit(-1);
-        }
         struct msgBuff processInfo;
         if (c<maxCount){
             val = msgrcv(pGeneratorToScheduler, &processInfo, sizeof(processInfo.process), 0, !IPC_NOWAIT);   // ...........
@@ -117,14 +117,40 @@ void STRN() {
                 CopyPCB(&tempProcess,processInfo.process);
                 AddAccordingToRemainingTime(&SRTN_Ready,tempProcess);
                 c++;
+                //printf("temp proces id is %d \n",tempProcess.id);
             }
         }
-
+        if(SRTN_Ready.head!=NULL)
+        {
+            struct PCB cmp = SRTN_Ready.head->pcb;
+            if(schProcess.id != -1 && cmp.id != schProcess.id && cmp.RemainingTime < schProcess.RunTime - (getClk() - schProcess.startTime))
+            {
+                schProcess.RemainingTime = schProcess.RunTime - (getClk() - schProcess.startTime);
+                schProcess.state=Stopped;
+                kill(schProcess.PID,SIGSTOP);
+                AddAccordingToRemainingTime(&SRTN_Ready,schProcess);
+                //printf("at time %d process %d stopped \n",getClk(),schProcess.id);
+                isRunning = false;
+                //printf(" running is %d\n",isRunning);
+                fprintf(SchedulerLog,"at time %d process %d stopped \n",getClk(),schProcess.id);
+            }
+        }
+        /*printf(" running is %d\n",isRunning);
+        if(isRunning)
+        {
+            printf("running on cpu\n");
+        }*/
+        /*struct PCBNode* iter = SRTN_Ready.head;
+        while(iter != NULL)
+        {
+            printf("id = %d\n",iter->pcb.id);
+        }
+        printf("\n");*/
         if (SRTN_Ready.head!=NULL && isRunning == false)  
         {
-            
-            if(schProcess.id != -1)
+            if(schProcess.id != -1 && schProcess.state!= Stopped)
             {
+                //printf("eneter second if my id is %d \n",schProcess.id);
                 //printf("At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n",getClk(),schProcess.id,schProcess.ArrTime,schProcess.RunTime,0,schProcess.WaitTime,getClk()-(schProcess.ArrTime),(double)(getClk()-(schProcess.ArrTime))/schProcess.RunTime);
                 fprintf(SchedulerLog,"At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n",getClk(),schProcess.id,schProcess.ArrTime,schProcess.RunTime,0,schProcess.WaitTime,getClk()-(schProcess.ArrTime),(double)(getClk()-(schProcess.ArrTime))/schProcess.RunTime);
                 WTA[pDone]=(double)(getClk()-(schProcess.ArrTime))/schProcess.RunTime;
@@ -136,7 +162,7 @@ void STRN() {
             schProcess.startTime=getClk();
             IncreaseWaitTime(&schProcess,schProcess.startTime - schProcess.ArrTime);
             //printf("At time %d process %d started arr %d total %d remain %d wait %d \n",schProcess.startTime,schProcess.id,schProcess.ArrTime,schProcess.RunTime,schProcess.RunTime,schProcess.WaitTime);
-            fprintf(SchedulerLog,"At time %d process %d started arr %d total %d remain %d wait %d \n",schProcess.startTime,schProcess.id,schProcess.ArrTime,schProcess.RunTime,schProcess.RunTime,schProcess.WaitTime);
+            fprintf(SchedulerLog,"At time %d process %d started arr %d total %d remain %d wait %d \n",schProcess.startTime,schProcess.id,schProcess.ArrTime,schProcess.RunTime,schProcess.RemainingTime,schProcess.WaitTime);
 
             Run(&schProcess);  
             isRunning=true;
@@ -209,7 +235,6 @@ void HPF() {  // check the return type of the alogrithms
 
         if (HPF_Ready.head!=NULL && isRunning == false)  
         {
-            
             if(schProcess.id != -1)
             {
                 //printf("At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n",getClk(),schProcess.id,schProcess.ArrTime,schProcess.RunTime,0,schProcess.WaitTime,getClk()-(schProcess.ArrTime),(double)(getClk()-(schProcess.ArrTime))/schProcess.RunTime);
@@ -252,6 +277,12 @@ void HPF() {  // check the return type of the alogrithms
 void Run(struct PCB* processToRun)
 {
     //printf("A process is about to run\n");
+    if(processToRun->state == Stopped)
+    {
+        processToRun->state = Running;
+        kill(processToRun->PID,SIGCONT);
+        return;
+    }
     int pid;
     pid= fork();
     if (pid == 0) {

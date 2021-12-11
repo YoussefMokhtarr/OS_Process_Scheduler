@@ -8,6 +8,7 @@ typedef short STATE;
 #define Waiting 1
 #define Running 2
 #define Terminated 3 
+#define Stopped 4
 
 
 // defining the PCB struct (Process Control Block)
@@ -34,6 +35,7 @@ void setPCB(struct PCB* pcb, int ID, int ARR, int RUN, int Pr)
     pcb->ArrTime = ARR;
     pcb->RunTime = RUN;
     pcb->Priority = Pr;
+    pcb->RemainingTime = RUN;
     pcb->state = NotStarted;
     pcb->WaitTime = 0;
 }

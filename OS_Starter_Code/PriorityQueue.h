@@ -91,7 +91,7 @@ void InsertAccordingToArrivalTime(struct PriorityQueue* que, struct PCBNode* new
         else
         {
             struct PCBNode* next = que->head;
-            while(next->next != NULL && next->next->pcb.ArrTime < newNode->pcb.ArrTime)
+            while(next->next != NULL && next->next->pcb.ArrTime <= newNode->pcb.ArrTime)
             {
                 next = next->next;
             }
