@@ -1,15 +1,46 @@
-#include"headers.h"
 
 /* Modify this file as needed*/
+<<<<<<< HEAD
+
+
+#include <stdlib.h>
+#include <time.h>
+int main(int argc, char * argv[])
+{
+    while(clock() < atoi(argv[1]) * CLOCKS_PER_SEC);
+    return 0;
+}
+
+
+
+
+
+
+
+
+
+
+//int remainingtime;
+=======
 int remainingtime;
+__clock_t x;
+int ContinueTime;
+int PauseTime;
+>>>>>>> ce97b1d07942dfd689a553cdb5cde8379933f800
 /*struct msgBuff {
     long mtype;
     struct PCB process;
 };
 void IPC_send(struct PCB* processToRun);
 struct PCB IPC_recieve();*/
+<<<<<<< HEAD
 
+/*int main(int agrc, char * argv[]) {
+=======
+void ContinueHandler();
 int main(int agrc, char * argv[]) {
+    signal(SIGCONT,ContinueHandler);
+>>>>>>> ce97b1d07942dfd689a553cdb5cde8379933f800
     initClk();
     //printf("mypid = %d\n",getpid());
     //TODO it needs to get the remaining time from somewhere
@@ -23,9 +54,12 @@ int main(int agrc, char * argv[]) {
     int startTime=atoi(argv[7]);
     int endTime=atoi(argv[8]);
     remainingtime=RunTime;
-    __clock_t x=getClk();
+    ContinueTime = 0;
+    PauseTime = 0;
+    x=getClk();
 
-    while (remainingtime > 0){
+
+    while (remainingtime + PauseTime > 0){
         if (x<getClk())
         {
         x=getClk();
@@ -39,7 +73,17 @@ int main(int agrc, char * argv[]) {
     //destroyClk(true);
     
     return 0;
+<<<<<<< HEAD
+}*/
+=======
 }
+
+void ContinueHandler()
+{
+    ContinueTime = getClk();
+    PauseTime += ContinueTime - x;
+}
+
 /*
 void IPC_send(struct PCB* recievedProcess)
 {
@@ -71,3 +115,4 @@ struct PCB IPC_recieve()
     return recievedProcess;
 }
 */
+>>>>>>> ce97b1d07942dfd689a553cdb5cde8379933f800

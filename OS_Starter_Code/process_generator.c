@@ -55,23 +55,19 @@ int main(int argc, char * argv[]) {
            { 
                 DeQueue(&que,&processToBeSent);
                 if(Algo == 1)
-                {
                     AddAccordingToPriority(&newQue,processToBeSent);
-                }
                 else if(Algo == 2)
-                {
                     AddAccordingToRemainingTime(&newQue,processToBeSent);
-                }
                 else
-                {
                     Add(&newQue,processToBeSent);
-                }
            }
           //  printf("current ID of the process after%d\n",processToBeSent.id);
             while(newQue.head != NULL)
             {
                 DeQueue(&newQue,&processToBeSent);
                 IPC(processToBeSent);
+                if (que.head)
+                    sleep(que.head->pcb.ArrTime-processToBeSent.ArrTime);
             }
             
             //sleep(5);
