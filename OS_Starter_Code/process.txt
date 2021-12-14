@@ -1,13 +1,6 @@
 #id arrivalTime runningTime Priority
-<<<<<<< HEAD
 1 1 3 3
 2 9 2 2
 3 10 3 2
 4 11 4 4
-=======
-1 1 7 2
-2 1 7 3
-3 2 2 3
-4 5 1 4
-5 5 5 5
->>>>>>> ce97b1d07942dfd689a553cdb5cde8379933f800
+
