@@ -10,11 +10,11 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <signal.h>
-#include"PCB.h"
-
+#include "PriorityQueue.h"
+#include <math.h>
 typedef short bool;
 #define true 1
-#define false 1
+#define false 0
 
 #define SHKEY 300
 
@@ -66,3 +66,8 @@ void destroyClk(bool terminateAll)
         killpg(getpgrp(), SIGINT);
     }
 }
+
+struct msgBuff {
+    long mtype;
+    struct PCB process;
+};
