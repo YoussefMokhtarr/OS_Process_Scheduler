@@ -164,7 +164,7 @@ void STRN()
         }
     }
 }
-
+/*
 void HPF()
 { // check the return type of the alogrithms
     fprintf(SchedulerLog, "# The running algorithm is : HPF\n");
@@ -220,8 +220,9 @@ void HPF()
             //printf("At time %d process %d started arr %d total %d remain %d wait %d \n",schProcess.startTime,schProcess.id,schProcess.ArrTime,schProcess.RunTime,schProcess.RunTime,schProcess.WaitTime);
             fprintf(SchedulerLog, "At time %d process %d started arr %d total %d remain %d wait %d \n", schProcess.startTime, schProcess.id, schProcess.ArrTime, schProcess.RunTime, schProcess.RunTime, schProcess.WaitTime);
             Run(&schProcess);
-            sleep(schProcess.RemainingTime);
             isRunning = true;
+            sleep(schProcess.RemainingTime);
+            
         }
         if (isRunning == false)
         {
@@ -242,14 +243,89 @@ void HPF()
             break;
         }
     }
+}*/
+
+struct PCB tempProcess;
+struct PCBNode processNode;
+struct PCB schProcess;
+
+int val;
+int c = 0;
+int pDone = 0;
+void HPF()
+{ // check the return type of the alogrithms
+    fprintf(SchedulerLog, "# The running algorithm is : HPF\n");
+    fprintf(SchedulerLog, "# At time x process y started arr z total w remain u wait v \n");
+    int count = maxCount; /// should be the number of processes
+    isRunning = false;
+    schProcess.id = -1;
+    struct PriorityQueue HPF_Ready;
+    initializeQueue(&HPF_Ready);
+    __clock_t x = getClk();
+
+    while (1)
+    {
+        struct msgBuff processInfo;
+        int pGeneratorToScheduler = msgget(1234, 0666 | IPC_CREAT);
+        if (pGeneratorToScheduler == -1)
+        {
+            perror("error in creat\n");
+            exit(-1);
+        }
+        if (isRunning == false && schProcess.id != -1)
+        {
+            fprintf(SchedulerLog, "At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n", getClk(), schProcess.id, schProcess.ArrTime, schProcess.RunTime, 0, schProcess.WaitTime, getClk() - (schProcess.ArrTime), (double)(getClk() - (schProcess.ArrTime)) / schProcess.RunTime);
+            WTA[pDone] = (double)(getClk() - (schProcess.ArrTime)) / schProcess.RunTime;
+            Wait[pDone] = schProcess.WaitTime;
+            totalRun[pDone] = schProcess.RunTime;
+            pDone++;
+        }
+        if (c < maxCount && isRunning == false)
+        {
+
+            //int rc;
+            //struct msqid_ds buf;
+            //int num_messages;
+
+            //rc = msgctl(pGeneratorToScheduler, IPC_STAT, &buf);
+            //num_messages = buf.msg_qnum;
+            //printf("at time %d the message in Q=%d\n",getClk(),num_messages);
+           // for (int i = 0; i < num_messages; i++)
+            {
+                val = msgrcv(pGeneratorToScheduler, &processInfo, sizeof(processInfo.process), 0, !IPC_NOWAIT); // ...........
+                //TODO: recieve all the procces in the queue tehen deque one to run
+                CopyPCB(&tempProcess, processInfo.process);
+                AddAccordingToPriority(&HPF_Ready, tempProcess);
+            }
+            //
+            if (HPF_Ready.head!=NULL)
+            {
+                //printf("I recieved a process at time: %d\n", getClk());
+                //CopyPCB(&schProcess, processInfo.process);
+                DeQueue(&HPF_Ready, &schProcess);
+                schProcess.startTime = getClk();
+                IncreaseWaitTime(&schProcess, schProcess.startTime - schProcess.ArrTime);
+                fprintf(SchedulerLog, "At time %d process %d started arr %d total %d remain %d wait %d \n", schProcess.startTime, schProcess.id, schProcess.ArrTime, schProcess.RunTime, schProcess.RunTime, schProcess.WaitTime);
+                Run(&schProcess);
+                isRunning = true;
+                sleep(schProcess.RunTime);
+                c++;
+            }
+        }
+
+        if (pDone == maxCount)
+        {
+            break;
+        }
+    }
 }
 void Run(struct PCB *processToRun)
 {
     //printf("A process is about to run\n");
-    if(processToRun->state == Stopped)
+    if (processToRun->state == Stopped)
     {
         processToRun->state = Running;
-        kill(processToRun->PID,SIGCONT);
+        kill(processToRun->PID, SIGCONT);
         return;
     }
     int pid;
@@ -276,55 +352,9 @@ void Run(struct PCB *processToRun)
     //struct PCB recievedProcess = IPC_recieve();
     //printf("at time =%d process with id %d finished with runtime time %d \n",getClk(),recievedProcess.id,recievedProcess.RunTime);
 }
-/*
-struct PCB IPC() {
-    struct PCB recievedProcess;
-    int pGeneratorToScheduler = msgget(1234, 0666 | IPC_CREAT);
-    if (pGeneratorToScheduler == -1){
-        perror("error in creat\n");
-        exit(-1);
-    }
-    struct msgBuff processInfo;
-    int val = msgrcv(pGeneratorToScheduler, &processInfo, sizeof(processInfo.process), 0, !IPC_NOWAIT);
-    if (val == -1)
-        printf("Error in recieve");
-    CopyPCB(&recievedProcess,processInfo.process);
-    return recievedProcess;
-}*/
-/*
-void IPC_send(struct PCB* processToRun)
-    {
-    int schedulerToProcess = msgget(1357, 0666 | IPC_CREAT);
-    if (schedulerToProcess == -1){
-        perror("error in creat");
-        exit(-1);
-    }
-    struct msgBuff processInfo;
-    processInfo.mtype = (getpid()%10000)+1;
-    CopyPCB(&processInfo.process, *processToRun);
-    int val = msgsnd(schedulerToProcess, &processInfo, sizeof(processInfo.process), IPC_NOWAIT);
-    if (val == -1)
-        printf("Error in send");
-}
 
-struct PCB IPC_recieve()
+void RR()
 {
-    int processToScheduler = msgget(2468, 0666 | IPC_CREAT);
-    if (processToScheduler == -1){
-        perror("error in creat");
-        exit(-1);
-    }
-    struct PCB recievedProcess;
-    struct msgBuff processInfo;
-    int val = msgrcv(processToScheduler, &processInfo, sizeof(processInfo.process), 0, !IPC_NOWAIT);
-    if (val == -1)
-        printf("Error in recieve");
-    CopyPCB(&recievedProcess,processInfo.process);
-    return recievedProcess;
-}*/
-
-void RR() {
-
 }
 void handler1()
 {
