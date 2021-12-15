@@ -156,7 +156,7 @@ void getAlgorithm() {
     while (!(Algo==1||Algo==2||Algo==3)) {
         printf("Choose A valid Number....\n");
         scanf("%d", &Algo);
-        sleep(3);
+        //sleep(3);
     }
     if (Algo==3) {
         printf("Enter the quantum time....\n");
