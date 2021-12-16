@@ -416,6 +416,7 @@ void STRN()
             //
             if (SRTN_Ready.head != NULL && isRunning == false)
             {
+                //printf("I entered this if\n");
                 DeQueue(&SRTN_Ready, &schProcess);
                 schProcess.startTime = getClk();
                 IncreaseWaitTime(&schProcess, schProcess.startTime - schProcess.ArrTime);

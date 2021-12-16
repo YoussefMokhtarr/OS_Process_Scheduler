@@ -1,5 +1,5 @@
 # The running algorithm is : HPF
-CPU utilization = 118.18%
-Avg WTA = 0.26
-Avg waiting = 0.50
-Std WTA = 0.34
+CPU utilization = 53.85%
+Avg WTA = 1.21
+Avg waiting = 1.25
+Std WTA = 0.84
