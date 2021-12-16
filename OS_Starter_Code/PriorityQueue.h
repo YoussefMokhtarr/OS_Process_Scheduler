@@ -108,6 +108,39 @@ void InsertAccordingToArrivalTime(struct PriorityQueue* que, struct PCBNode* new
     }
 }
 
+void InsertAccordingToInverseArrivalTime(struct PriorityQueue* que, struct PCBNode* newNode)
+{
+    if(que->head == NULL)
+    {
+        que->head = newNode;
+    }
+    else
+    {
+        if(1/(que->head->pcb.ArrTime) > 1/(newNode->pcb.ArrTime))
+        {
+            newNode->next = que->head;
+            que->head = newNode;
+        }
+        else
+        {
+            struct PCBNode* next = que->head;
+            while(next->next != NULL && 1/(next->next->pcb.ArrTime) <= 1/(newNode->pcb.ArrTime))
+            {
+                next = next->next;
+            }
+            if(next->next != NULL)
+            {
+                newNode->next = next->next;
+                next->next = newNode;
+            }
+            else
+            {
+                next->next = newNode;
+            }
+        }
+    }
+}
+
 void InsertAccordingToReaminingTime(struct PriorityQueue* que, struct PCBNode* newNode)
 {
     if(que->head == NULL)
@@ -183,6 +216,12 @@ void AddAccordingToArrivalTime(struct PriorityQueue* a, struct PCB pcb)
     struct PCBNode* node = (struct PCBNode*)malloc(sizeof(struct PCBNode));
     node->pcb = pcb;
     InsertAccordingToArrivalTime(a,node);
+}
+void AddAccordingToInverseArrivalTime(struct PriorityQueue* a, struct PCB pcb)
+{
+    struct PCBNode* node = (struct PCBNode*)malloc(sizeof(struct PCBNode));
+    node->pcb = pcb;
+    InsertAccordingToInverseArrivalTime(a,node);
 }
 
 void AddAccordingToRemainingTime(struct PriorityQueue* a, struct PCB pcb)
