@@ -5,11 +5,13 @@
 int Algo;
 int time_quantum;
 int count = 0;
+int pGeneratorToScheduler;
 //temp for input
 int a, b, c, d;
 struct PCB processArr[3];
 //functions
 void clearResources(int);
+void almHandeler(int);
 struct PriorityQueue que;
 struct PCB processToBeSent;
 void getAlgorithm();
@@ -21,6 +23,7 @@ struct PriorityQueue sendingQueue;
 int main(int argc, char *argv[])
 {
     signal(SIGINT, clearResources);
+    signal(SIGALRM, almHandeler);
     // TODO Initialization
     // 1. Read the input files.
     ReadFile();
@@ -29,8 +32,8 @@ int main(int argc, char *argv[])
     // 3. Initiate and create the scheduler and clock processes.
     struct PriorityQueue newQue;
     initializeQueue(&newQue);
-    
-    while (que.head != NULL)
+
+    /*while (que.head != NULL)
     {
         DeQueue(&que, &processToBeSent);
         if (Algo == 1)
@@ -45,9 +48,9 @@ int main(int argc, char *argv[])
     {
         DeQueue(&newQue, &processToBeSent);
         AddAccordingToArrivalTime(&que, processToBeSent);
-       // printf("Id=%d\n",processToBeSent.id);
-    }
-   /*printf("******************************************\n");
+        // printf("Id=%d\n",processToBeSent.id);
+    }*/
+    /*printf("******************************************\n");
     while (que.head != NULL)
     {
         DeQueue(&que, &processToBeSent);
@@ -75,7 +78,15 @@ int main(int argc, char *argv[])
             DeQueue(&que, &processToBeSent);
             IPC(processToBeSent);
             if (que.head)
-                sleep(que.head->pcb.ArrTime - processToBeSent.ArrTime);
+            {
+                int timeToWait = que.head->pcb.ArrTime - processToBeSent.ArrTime;
+                if (timeToWait != 0)
+                {
+                    alarm(timeToWait);
+                    pause();
+                }
+                //sleep(que.head->pcb.ArrTime - processToBeSent.ArrTime);
+            }
         }
     }
 
@@ -124,7 +135,7 @@ void ReadFile()
 }
 void IPC(struct PCB processToBeSent)
 {
-    int pGeneratorToScheduler = msgget(1234, 0666 | IPC_CREAT);
+    pGeneratorToScheduler = msgget(1234, 0666 | IPC_CREAT);
     if (pGeneratorToScheduler == -1)
     {
         perror("error in creat");
@@ -138,12 +149,17 @@ void IPC(struct PCB processToBeSent)
         printf("Error in send process\n");
     // printf("at time %d A process with id %d has been sent\n",t,processInfo.process.id);
 }
+
 void clearResources(int signum)
 {
     //TODO Clears all resources in case of interruption
-
+    msgctl(pGeneratorToScheduler, IPC_RMID, (struct msqid_ds *)0);
     destroyClk(true);
     exit(0);
+}
+void almHandeler(int x)
+{
+    //printf("here1\n");
 }
 
 void getAlgorithm()
