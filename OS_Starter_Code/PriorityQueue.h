@@ -181,7 +181,7 @@ void DeQueue(struct PriorityQueue* que, struct PCB* tosetPCB)
         struct PCBNode* node = que->head;
         que->head = que->head->next;
         CopyPCB(tosetPCB, node->pcb);
-       // free(node);
+        free(node);
         node = NULL;
     }
     else

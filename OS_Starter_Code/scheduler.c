@@ -326,7 +326,8 @@ void Run(struct PCB *processToRun)
     //printf("A process is about to run\n");
     if (processToRun->state == Stopped)
     {
-        //printf("process with ID = %d resumed\n",processToRun->id);
+        printf("process with ID = %d resumed\n",processToRun->id);
+        fprintf(SchedulerLog,"process with id = %d resumed at clk = %d\n",processToRun->id,getClk());
         processToRun->state = Running;
         kill(processToRun->PID, SIGCONT);
         return;
@@ -417,14 +418,19 @@ void STRN()
             if (SRTN_Ready.head != NULL && isRunning == false)
             {
                 //printf("I entered this if\n");
+                printf("%d \t",schProcess.id);
                 DeQueue(&SRTN_Ready, &schProcess);
-                schProcess.startTime = getClk();
-                IncreaseWaitTime(&schProcess, schProcess.startTime - schProcess.ArrTime);
-                fprintf(SchedulerLog, "At time %d process %d started arr %d total %d remain %d wait %d \n", schProcess.startTime, schProcess.id, schProcess.ArrTime, schProcess.RunTime, schProcess.RunTime, schProcess.WaitTime);
+                printf("%d \t\n",schProcess.id);
+                if(schProcess.state == NotStarted)
+                {
+                    schProcess.startTime = getClk();
+                    IncreaseWaitTime(&schProcess, schProcess.startTime - schProcess.ArrTime);
+                    fprintf(SchedulerLog, "At time %d process %d started arr %d total %d remain %d wait %d \n", schProcess.startTime, schProcess.id, schProcess.ArrTime, schProcess.RunTime, schProcess.RunTime, schProcess.WaitTime);
+                }
                 Run(&schProcess);
                 isRunning = true;
                 //sleep(schProcess.RunTime);
-                pause();
+                //pause();
             }
         }
 
@@ -582,6 +588,7 @@ void handler1()  // from sigchild
 {
     //if (Algo == 1)
     {
+        printf("%d process finished at time = %d\n",schProcess.id,getClk());
         isRunning = false;
         pDone++;
         fprintf(SchedulerLog, "At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n", getClk(), schProcess.id, schProcess.ArrTime, schProcess.RunTime, 0, schProcess.WaitTime, getClk() - (schProcess.ArrTime), (double)(getClk() - (schProcess.ArrTime)) / schProcess.RunTime);
