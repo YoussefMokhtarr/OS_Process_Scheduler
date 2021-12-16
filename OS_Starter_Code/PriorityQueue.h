@@ -58,7 +58,7 @@ void InsertAccordingToPriority(struct PriorityQueue* que, struct PCBNode* newNod
         else
         {
             struct PCBNode* next = que->head;
-            while(next->next != NULL && next->next->pcb.Priority < newNode->pcb.Priority)
+            while(next->next != NULL && next->next->pcb.Priority <= newNode->pcb.Priority)
             {
                 next = next->next;
             }
@@ -157,7 +157,7 @@ void InsertAccordingToReaminingTime(struct PriorityQueue* que, struct PCBNode* n
         else
         {
             struct PCBNode* next = que->head;
-            while(next->next != NULL && next->next->pcb.RunTime < newNode->pcb.RunTime)
+            while(next->next != NULL && next->next->pcb.RunTime <= newNode->pcb.RunTime)
             {
                 next = next->next;
             }

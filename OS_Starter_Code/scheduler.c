@@ -36,6 +36,7 @@ int main(int argc, char *argv[])
     Wait = calloc(maxCount, sizeof(double));
     totalRun = calloc(maxCount, sizeof(double));
 
+    
     initClk();
     __clock_t x = getClk();
 
@@ -87,7 +88,7 @@ int main(int argc, char *argv[])
     destroyClk(true);
 }
 
-void STRN()
+/*void STRN()
 {
 
     fprintf(SchedulerLog, "# The running algorithm is : SRTN\n");
@@ -166,7 +167,6 @@ void STRN()
         }
     }
 }
-/*
 void HPF()
 { // check the return type of the alogrithms
     fprintf(SchedulerLog, "# The running algorithm is : HPF\n");
@@ -263,6 +263,7 @@ void HPF()
     schProcess.id = -1;
     struct PriorityQueue HPF_Ready;
     initializeQueue(&HPF_Ready);
+    initClk();
     __clock_t x = getClk();
 
     while (1)
@@ -325,6 +326,7 @@ void Run(struct PCB *processToRun)
     //printf("A process is about to run\n");
     if (processToRun->state == Stopped)
     {
+        //printf("process with ID = %d resumed\n",processToRun->id);
         processToRun->state = Running;
         kill(processToRun->PID, SIGCONT);
         return;
@@ -353,6 +355,84 @@ void Run(struct PCB *processToRun)
     // IPC_send(processToRun);
     //struct PCB recievedProcess = IPC_recieve();
     //printf("at time =%d process with id %d finished with runtime time %d \n",getClk(),recievedProcess.id,recievedProcess.RunTime);
+}
+
+void STRN()
+{
+    //printf("entered\n");
+    fprintf(SchedulerLog, "# The running algorithm is : SRTN\n");
+    fprintf(SchedulerLog, "# At time x process y started arr z total w remain u wait v \n");
+    int count = maxCount; /// should be the number of processes
+    isRunning = false;
+    schProcess.id = -1;
+    struct PriorityQueue SRTN_Ready;
+    initializeQueue(&SRTN_Ready);
+    __clock_t x = getClk();
+
+    while (1)
+    {    
+        //printf("looping\n");
+
+        struct msgBuff processInfo;
+        int pGeneratorToScheduler = msgget(1234, 0666 | IPC_CREAT);
+        if (pGeneratorToScheduler == -1)
+        {
+            perror("error in creat\n");
+            exit(-1);
+        }
+        if (c < maxCount)
+        {
+            val = 1;
+            while (val != -1)
+            {
+                val = msgrcv(pGeneratorToScheduler, &processInfo, sizeof(processInfo.process), 0, IPC_NOWAIT); // ...........
+                if (val == -1)
+                    break;
+                CopyPCB(&tempProcess, processInfo.process);
+                AddAccordingToRemainingTime(&SRTN_Ready, tempProcess);
+            }
+            if(SRTN_Ready.head!= NULL && schProcess.id != -1 && schProcess.state == Running)
+            {
+                //printf("I entered the first if\n");
+                if(SRTN_Ready.head->pcb.RemainingTime < schProcess.RemainingTime - (getClk() - schProcess.startTime))
+                {
+                    //printf("I entered the second if\n");
+                    schProcess.state = Stopped;
+                    kill(schProcess.PID,SIGSTOP);
+                    isRunning = false;
+                    schProcess.RemainingTime = schProcess.RemainingTime - (getClk() - schProcess.startTime);
+                    AddAccordingToRemainingTime(&SRTN_Ready,schProcess);
+                    fprintf(SchedulerLog,"perocess with id = %d stopped\n",schProcess.id);
+                }
+            }
+            /*struct PCBNode* iter = SRTN_Ready.head;
+            while (iter != NULL)
+            {
+                printf("id = %d \t",iter->pcb.id);
+                iter = iter->next;
+            }
+            printf("\n");*/
+
+            //
+            if (SRTN_Ready.head != NULL && isRunning == false)
+            {
+                DeQueue(&SRTN_Ready, &schProcess);
+                schProcess.startTime = getClk();
+                IncreaseWaitTime(&schProcess, schProcess.startTime - schProcess.ArrTime);
+                fprintf(SchedulerLog, "At time %d process %d started arr %d total %d remain %d wait %d \n", schProcess.startTime, schProcess.id, schProcess.ArrTime, schProcess.RunTime, schProcess.RunTime, schProcess.WaitTime);
+                Run(&schProcess);
+                isRunning = true;
+                //sleep(schProcess.RunTime);
+                pause();
+            }
+        }
+
+        if (pDone == maxCount)
+        {
+            break;
+        }
+    }
+
 }
 
 void RR()
@@ -512,5 +592,5 @@ void handler1()  // from sigchild
 }
 void almHandeler(int x)  // 
 {
-    
+    //printf("the generator awakened me at %d\n",getClk());
 }
