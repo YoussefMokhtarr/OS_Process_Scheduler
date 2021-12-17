@@ -15,6 +15,7 @@ void RR();
 struct PCB IPC();
 void Run(struct PCB *processToRun);
 void handler1();
+void almHandeler(int);
 FILE *SchedulerLog;
 FILE *SchedulerPerf;
 int maxCount;
@@ -24,8 +25,8 @@ double *Wait;
 double *totalRun;
 int main(int argc, char *argv[])
 {
-
     signal(SIGCHLD, handler1);
+    signal(SIGALRM, almHandeler);
     Algo = atoi(argv[1]);
     time_quantum = atoi(argv[2]);
     parentID = atoi(argv[3]);
@@ -81,7 +82,7 @@ int main(int argc, char *argv[])
     fprintf(SchedulerPerf, "Avg waiting = %.2f\n", avgWait);
     fprintf(SchedulerPerf, "Std WTA = %.2f\n", std);
     fclose(SchedulerPerf);
-    printf("finish clock:%d\n",getClk());
+    //printf("finish clock:%d\n",getClk());
     destroyClk(true);
 }
 
@@ -156,7 +157,7 @@ void STRN()
         }
 
         if (c == maxCount) // all the processes has been recieved
-            kill(SIGINT, parentID);
+            kill(parentID, SIGINT);
         if (pDone == maxCount)
         {
             // should print the file
@@ -254,6 +255,7 @@ int c = 0;
 int pDone = 0;
 void HPF()
 { // check the return type of the alogrithms
+
     fprintf(SchedulerLog, "# The running algorithm is : HPF\n");
     fprintf(SchedulerLog, "# At time x process y started arr z total w remain u wait v \n");
     int count = maxCount; /// should be the number of processes
@@ -272,18 +274,10 @@ void HPF()
             perror("error in creat\n");
             exit(-1);
         }
-        /*if (isRunning == false && schProcess.id != -1)
-        {
-            fprintf(SchedulerLog, "At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n", getClk(), schProcess.id, schProcess.ArrTime, schProcess.RunTime, 0, schProcess.WaitTime, getClk() - (schProcess.ArrTime), (double)(getClk() - (schProcess.ArrTime)) / schProcess.RunTime);
-            WTA[pDone] = (double)(getClk() - (schProcess.ArrTime)) / schProcess.RunTime;
-            Wait[pDone] = schProcess.WaitTime;
-            totalRun[pDone] = schProcess.RunTime;
-            pDone++;
-        }*/
         if (c < maxCount && isRunning == false)
         {
 
-            int rc;
+            /*int rc;
             struct msqid_ds buf;
             int num_messages;
 
@@ -293,6 +287,15 @@ void HPF()
             for (int i = 0; i < num_messages; i++)
             {
                 val = msgrcv(pGeneratorToScheduler, &processInfo, sizeof(processInfo.process), 0, !IPC_NOWAIT); // ...........
+                CopyPCB(&tempProcess, processInfo.process);
+                AddAccordingToPriority(&HPF_Ready, tempProcess);
+            }*/
+            val = 1;
+            while (val != -1)
+            {
+                val = msgrcv(pGeneratorToScheduler, &processInfo, sizeof(processInfo.process), 0, IPC_NOWAIT); // ...........
+                if (val == -1)
+                    break;
                 CopyPCB(&tempProcess, processInfo.process);
                 AddAccordingToPriority(&HPF_Ready, tempProcess);
             }
@@ -305,17 +308,19 @@ void HPF()
                 fprintf(SchedulerLog, "At time %d process %d started arr %d total %d remain %d wait %d \n", schProcess.startTime, schProcess.id, schProcess.ArrTime, schProcess.RunTime, schProcess.RunTime, schProcess.WaitTime);
                 Run(&schProcess);
                 isRunning = true;
-                sleep(schProcess.RunTime);
-                pDone++;
-                fprintf(SchedulerLog, "At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n", getClk(), schProcess.id, schProcess.ArrTime, schProcess.RunTime, 0, schProcess.WaitTime, getClk() - (schProcess.ArrTime), (double)(getClk() - (schProcess.ArrTime)) / schProcess.RunTime);
+                //sleep(schProcess.RunTime);
+                pause();
+                /* fprintf(SchedulerLog, "At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n", getClk(), schProcess.id, schProcess.ArrTime, schProcess.RunTime, 0, schProcess.WaitTime, getClk() - (schProcess.ArrTime), (double)(getClk() - (schProcess.ArrTime)) / schProcess.RunTime);
                 WTA[pDone] = (double)(getClk() - (schProcess.ArrTime)) / schProcess.RunTime;
                 Wait[pDone] = schProcess.WaitTime;
                 totalRun[pDone] = schProcess.RunTime;
+                schProcess.state = Terminated;*/
             }
         }
 
         if (pDone == maxCount)
         {
+            kill(getppid(), SIGTERM);
             break;
         }
     }
@@ -348,6 +353,7 @@ void Run(struct PCB *processToRun)
         pid = wait(&status);
         if (WIFEXITED(status))
             printf("\nI am the child with pid %d, and exit code %d\n", pid, WEXITSTATUS(status));*/
+
         processToRun->PID = pid;
         processToRun->state = Running;
     }
@@ -376,7 +382,7 @@ void RR()
             perror("error in creat\n");
             exit(-1);
         }
-        if (c < maxCount )
+        if (c < maxCount)
         {
 
             int rc;
@@ -392,7 +398,16 @@ void RR()
                 CopyPCB(&tempProcess, processInfo.process);
                 Add(&RR_Ready, tempProcess);
             }
-            if (schProcess.state==Running)
+            /*val = 1;
+            while (val != -1)
+            {
+                val = msgrcv(pGeneratorToScheduler, &processInfo, sizeof(processInfo.process), 0, IPC_NOWAIT); // ...........
+                if (val == -1)
+                    break;
+                CopyPCB(&tempProcess, processInfo.process);
+                Add(&RR_Ready, tempProcess);
+            }*/
+            if (schProcess.state == Stopped)
                 Add(&RR_Ready, schProcess); //TODO: we need a function that adds according to inverse arrivaltime
             if (RR_Ready.head != NULL)
             {
@@ -400,65 +415,84 @@ void RR()
                 schProcess.startTime = getClk();
                 IncreaseWaitTime(&schProcess, schProcess.startTime - schProcess.ArrTime);
 
-               // isRunning = true;
+                // isRunning = true;
                 if (schProcess.state == NotStarted)
                 {
                     if (schProcess.RemainingTime > time_quantum)
                     {
+                        printf("At time %d process %d started arr %d total %d remain %d wait %d \n", getClk(), schProcess.id, schProcess.ArrTime, schProcess.RunTime, schProcess.RemainingTime, schProcess.WaitTime);
                         fprintf(SchedulerLog, "At time %d process %d started arr %d total %d remain %d wait %d \n", getClk(), schProcess.id, schProcess.ArrTime, schProcess.RunTime, schProcess.RemainingTime, schProcess.WaitTime);
                         Run(&schProcess);
                         //printf("Quantum is:%d and clock now is:%d\n",time_quantum,getClk());
-                        sleep(time_quantum);
-                      //  printf("Iam awakeeeeeeeeeeeeeeeeeeeeeeeeee Quantum is:%d and clock now is:%d\n",time_quantum,getClk());
+                        //sleep(time_quantum);
+                        alarm(time_quantum);
+                        int wstatus = -2;
+                        waitpid(-1, &wstatus, 0);
+
+                        //  printf("Iam awakeeeeeeeeeeeeeeeeeeeeeeeeee Quantum is:%d and clock now is:%d\n",time_quantum,getClk());
                         //TODO:stop th process
-                        kill(SIGSTOP, schProcess.PID); // look at RUN function
+                        kill(schProcess.PID, SIGSTOP); // look at RUN function
                         //decrement the remaining time
                         schProcess.RemainingTime = schProcess.RemainingTime - time_quantum;
+                        printf("At time %d process %d stopped arr %d total %d remain %d wait %d \n", getClk(), schProcess.id, schProcess.ArrTime, schProcess.RunTime, schProcess.RemainingTime, schProcess.WaitTime);
                         fprintf(SchedulerLog, "At time %d process %d stopped arr %d total %d remain %d wait %d \n", getClk(), schProcess.id, schProcess.ArrTime, schProcess.RunTime, schProcess.RemainingTime, schProcess.WaitTime);
-                        
+                        schProcess.state = Stopped;
                     }
                     else
                     {
-                        fprintf(SchedulerLog, "At time %d process %d started arr %d total %d remain %d wait %d \n",getClk(), schProcess.id, schProcess.ArrTime, schProcess.RunTime, schProcess.RemainingTime, schProcess.WaitTime);
+                        fprintf(SchedulerLog, "At time %d process %d started arr %d total %d remain %d wait %d \n", getClk(), schProcess.id, schProcess.ArrTime, schProcess.RunTime, schProcess.RemainingTime, schProcess.WaitTime);
+                        printf("At time %d process %d started arr %d total %d remain %d wait %d \n", getClk(), schProcess.id, schProcess.ArrTime, schProcess.RunTime, schProcess.RemainingTime, schProcess.WaitTime);
                         Run(&schProcess);
-                        sleep(schProcess.RunTime);
-                        
+
+                        //sleep(schProcess.RunTime);
+                       pause();
+
+                        /*printf("At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n", getClk(), schProcess.id, schProcess.ArrTime, schProcess.RunTime, 0, schProcess.WaitTime, getClk() - (schProcess.ArrTime), (double)(getClk() - (schProcess.ArrTime)) / schProcess.RunTime);
                         fprintf(SchedulerLog, "At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n", getClk(), schProcess.id, schProcess.ArrTime, schProcess.RunTime, 0, schProcess.WaitTime, getClk() - (schProcess.ArrTime), (double)(getClk() - (schProcess.ArrTime)) / schProcess.RunTime);
                         WTA[pDone] = (double)(getClk() - (schProcess.ArrTime)) / schProcess.RunTime;
                         Wait[pDone] = schProcess.WaitTime;
                         totalRun[pDone] = schProcess.RunTime;
-                        schProcess.state=Terminated;
-                        pDone++;
+                        schProcess.state = Terminated;
+                        pDone++;*/
                     }
                 }
-                else
+                else //if (schProcess.state == Stopped)
                 {
                     if (schProcess.RemainingTime > time_quantum)
                     {
-                        kill(SIGCONT, schProcess.PID);
+                        kill(schProcess.PID, SIGCONT);
+                        printf("At time %d process %d resumed arr %d total %d remain %d wait %d \n", getClk(), schProcess.id, schProcess.ArrTime, schProcess.RunTime, schProcess.RemainingTime, schProcess.WaitTime);
                         fprintf(SchedulerLog, "At time %d process %d resumed arr %d total %d remain %d wait %d \n", getClk(), schProcess.id, schProcess.ArrTime, schProcess.RunTime, schProcess.RemainingTime, schProcess.WaitTime);
 
-                        sleep(time_quantum);
+                        //sleep(time_quantum);
+                        alarm(time_quantum);
+                        pause();
 
                         //TODO:stop th process
-                        kill(SIGSTOP, schProcess.PID); // look at RUN function
+                        kill(schProcess.PID, SIGSTOP); // look at RUN function
                         //decrement the remaining time
                         schProcess.RemainingTime = schProcess.RemainingTime - time_quantum;
+                        printf("At time %d process %d stopped arr %d total %d remain %d wait %d \n", getClk(), schProcess.id, schProcess.ArrTime, schProcess.RunTime, schProcess.RemainingTime, schProcess.WaitTime);
                         fprintf(SchedulerLog, "At time %d process %d stopped arr %d total %d remain %d wait %d \n", getClk(), schProcess.id, schProcess.ArrTime, schProcess.RunTime, schProcess.RemainingTime, schProcess.WaitTime);
+                        schProcess.state = Stopped;
                     }
                     else
                     {
-                        kill(SIGCONT, schProcess.PID);
+                        kill(schProcess.PID, SIGCONT);
+                        printf("At time %d process %d resumed arr %d total %d remain %d wait %d \n", getClk(), schProcess.id, schProcess.ArrTime, schProcess.RunTime, schProcess.RemainingTime, schProcess.WaitTime);
                         fprintf(SchedulerLog, "At time %d process %d resumed arr %d total %d remain %d wait %d \n", getClk(), schProcess.id, schProcess.ArrTime, schProcess.RunTime, schProcess.RemainingTime, schProcess.WaitTime);
 
-                        sleep(schProcess.RemainingTime);
-                        
+                        //sleep(schProcess.RemainingTime);
+                
+                        pause();
+
+                       /* printf("At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n", getClk(), schProcess.id, schProcess.ArrTime, schProcess.RunTime, 0, schProcess.WaitTime, getClk() - (schProcess.ArrTime), (double)(getClk() - (schProcess.ArrTime)) / schProcess.RunTime);
                         fprintf(SchedulerLog, "At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n", getClk(), schProcess.id, schProcess.ArrTime, schProcess.RunTime, 0, schProcess.WaitTime, getClk() - (schProcess.ArrTime), (double)(getClk() - (schProcess.ArrTime)) / schProcess.RunTime);
                         WTA[pDone] = (double)(getClk() - (schProcess.ArrTime)) / schProcess.RunTime;
                         Wait[pDone] = schProcess.WaitTime;
                         totalRun[pDone] = schProcess.RunTime;
-                        schProcess.state=Terminated;
-                        pDone++;
+                        schProcess.state = Terminated;
+                        pDone++;*/
                     }
                 }
             }
@@ -466,11 +500,28 @@ void RR()
 
         if (pDone == maxCount)
         {
+            kill(getppid(), SIGTERM);
             break;
         }
     }
 }
-void handler1()
+void handler1() // from sigchild
 {
-    isRunning = false;
+    if (Algo == 1)
+    {
+        int wstatus = -2;
+        waitpid(-1, &wstatus, 0);
+        isRunning = false;
+        fprintf(SchedulerLog, "At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n", getClk(), schProcess.id, schProcess.ArrTime, schProcess.RunTime, 0, schProcess.WaitTime, getClk() - (schProcess.ArrTime), (double)(getClk() - (schProcess.ArrTime)) / schProcess.RunTime);
+        WTA[pDone] = (double)(getClk() - (schProcess.ArrTime)) / schProcess.RunTime;
+        Wait[pDone] = schProcess.WaitTime;
+        totalRun[pDone] = schProcess.RunTime;
+        schProcess.state = Terminated;
+    }
+    pDone++;
 }
+void almHandeler(int x) //
+{
+}
+//FIXME: - to solve zombie process problem we should use SIGCHILD in the main
+//   - when using SIGCHLD, it wakes the alarm and causes errors
