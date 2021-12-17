@@ -9,7 +9,7 @@ bool stoped;
 clock_t x;
 int main(int argc, char * argv[])
 {
-    printf("My id is %d\n",getpid());
+    //printf("My id is %d\n",getpid());
     //signal(SIGCONT,Conthandler);
     /*stoped = false;
     pauseClk = 0;
@@ -17,7 +17,7 @@ int main(int argc, char * argv[])
     x = clock();*/
     while(clock() < atoi(argv[1]) * CLOCKS_PER_SEC);
     //printf("I am done at time = %d \n",clock()/CLOCKS_PER_SEC);
-    printf("I will die \n");
+    //printf("I will die \n");
     return 0;
 }
 
