@@ -9,4 +9,8 @@ At time 4 process 3 finished arr 3 total 1 remain 0 wait 0 TA 1 WTA 1.00
 process with id = 2 resumed at clk = 4
 At time 6 process 2 finished arr 2 total 3 remain 0 wait 2 TA 4 WTA 1.33
 process with id = 1 resumed at clk = 6
-At time 10 process 1 finished arr 1 total 5 remain 0 wait 5 TA 9 WTA 1.80
+process 1 stopped at time = 7
+At time 7 process 4 started arr 7 total 2 remain 2 wait 0 
+At time 9 process 4 finished arr 7 total 2 remain 0 wait 0 TA 2 WTA 1.00
+process with id = 1 resumed at clk = 9
+At time 12 process 1 finished arr 1 total 5 remain 0 wait 13 TA 11 WTA 2.20

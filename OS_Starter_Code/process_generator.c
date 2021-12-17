@@ -78,11 +78,11 @@ int main(int argc, char *argv[])
         {
             DeQueue(&que, &processToBeSent);
             IPC(processToBeSent);
-            /*if (Algo == 2)
+            if (Algo == 2)
             {
                 //printf("I will awake the shedular at clk = %d\n", getClk());
                 kill(schedularID, SIGALRM);
-            }*/
+            }
             if (que.head)
             {
                 int timeToWait = que.head->pcb.ArrTime - processToBeSent.ArrTime;

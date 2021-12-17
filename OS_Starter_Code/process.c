@@ -18,6 +18,7 @@ int main(int argc, char * argv[])
     while(clock() < atoi(argv[1]) * CLOCKS_PER_SEC);
     //printf("I am done at time = %d \n",clock()/CLOCKS_PER_SEC);
     //printf("I will die \n");
+    //kill(getppid(),SIGALRM);
     return 0;
 }
 

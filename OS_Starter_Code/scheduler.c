@@ -15,6 +15,7 @@ void RR();
 struct PCB IPC();
 void Run(struct PCB *processToRun);
 void handler1(int sigint);
+void handler2(int sigint);
 void almHandeler(int);
 FILE *SchedulerLog;
 FILE *SchedulerPerf;
@@ -47,6 +48,7 @@ int main(int argc, char *argv[])
         HPF();
         break;
     case strn_Algo:
+        signal(SIGCHLD,handler2);
         STRN();
         break;
     case rr_Algo:
@@ -487,11 +489,11 @@ void STRN()
                 iter = iter->next;
             }
             printf("\n");
-            if (schProcess.id != -1)
+            if (schProcess.id != -1 && isRunning == true)
             {
                 printf("running process existing checked\n");
-                schProcess.RemainingTime = schProcess.RemainingTime - 1;
-                if (schProcess.RemainingTime <= 0)
+                schProcess.RemainingTime = schProcess.RemainingTime - (getClk() - schProcess.startTime);
+                if (schProcess.RemainingTime <= 0 && schProcess.state!=Terminated)
                 {
                     printf("running process termination existing checked\n");
                     schProcess.state = Terminated;
@@ -499,7 +501,7 @@ void STRN()
                     fprintf(SchedulerLog, "At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n", getClk(), schProcess.id, schProcess.ArrTime, schProcess.RunTime, 0, schProcess.WaitTime, getClk() - (schProcess.ArrTime), (double)(getClk() - (schProcess.ArrTime)) / schProcess.RunTime);
                     pDone++;
                 }
-                else if (SRTN_Ready.head != NULL)
+                if (SRTN_Ready.head != NULL)
                 {
                     printf("making sure that a process might be better to run\n");
                     if (SRTN_Ready.head->pcb.RemainingTime < schProcess.RemainingTime)
@@ -536,8 +538,20 @@ void STRN()
         {
             break;
         }
+        int status;
+        //int pid = wait(&status);
+        //pause();
+        /*if(WIFEXITED(status))
+        {
+            printf("running process termination existing checked\n");
+            schProcess.state = Terminated;
+            isRunning = false;
+            fprintf(SchedulerLog, "At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n", getClk(), schProcess.id, schProcess.ArrTime, schProcess.RunTime, 0, schProcess.WaitTime, getClk() - (schProcess.ArrTime), (double)(getClk() - (schProcess.ArrTime)) / schProcess.RunTime);
+            pDone++;
+        }*/
         printf("I will sleep\n");
-        sleep(1);
+        //sleep(1);
+        pause();
     }
 }
 
@@ -696,6 +710,12 @@ void handler1(int sigint) // from sigchild
     schProcess.state = Terminated;
     //printf("Count = %d\n",count);
 }
+
+void handler2(int sigint)
+{
+    raise(SIGALRM);
+}
+
 void almHandeler(int x) //
 {
     //printf("the generator awakened me at %d\n",getClk());
