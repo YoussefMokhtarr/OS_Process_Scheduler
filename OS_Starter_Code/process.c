@@ -9,6 +9,7 @@ bool stoped;
 clock_t x;
 int main(int argc, char * argv[])
 {
+    printf("My id is %d\n",getpid());
     //signal(SIGCONT,Conthandler);
     /*stoped = false;
     pauseClk = 0;
