@@ -19,7 +19,7 @@ void Start_Clk_Scheduler();
 void ReadFile();
 void IPC(struct PCB processToBeSent);
 struct PriorityQueue sendingQueue;
-
+int schedularID;
 int main(int argc, char *argv[])
 {
     signal(SIGINT, clearResources);
@@ -77,6 +77,11 @@ int main(int argc, char *argv[])
         {
             DeQueue(&que, &processToBeSent);
             IPC(processToBeSent);
+            if (Algo == 2)
+            {
+                //printf("I will awake the shedular at clk = %d\n", getClk());
+                kill(schedularID, SIGALRM);
+            }
             if (que.head)
             {
                 int timeToWait = que.head->pcb.ArrTime - processToBeSent.ArrTime;
@@ -89,8 +94,7 @@ int main(int argc, char *argv[])
             }
         }
     }
- 
- 
+
     pause();
 }
 
@@ -213,6 +217,10 @@ void Start_Clk_Scheduler()
                 char *scheduler_arg_list[] = {"./scheduler.out", cSendAlgo, cSendTime_quantum, parentID, Pcount, 0};
                 execve(scheduler_arg_list[0], scheduler_arg_list, NULL); // all the processes should be sent by execve
             }
+        }
+        else if (pid!=0 && i==1)
+        {
+            schedularID =pid;
         }
     }
 }
