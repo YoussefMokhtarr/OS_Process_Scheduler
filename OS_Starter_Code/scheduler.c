@@ -506,6 +506,9 @@ void SRTN()
                     Wait[pDone] = schProcess.WaitTime;
                     totalRun[pDone] = schProcess.RunTime;
                     pDone++;
+                    int status;
+                    int y = wait(&status);
+                    WIFEXITED(status);
                 }
                 if (SRTN_Ready.head != NULL)
                 {
