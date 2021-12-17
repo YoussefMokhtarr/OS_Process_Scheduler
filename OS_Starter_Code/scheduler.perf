@@ -1,5 +1,5 @@
 # The running algorithm is : SRTN
 CPU utilization = 91.67%
-Avg WTA = 1.52
-Avg waiting = 2.00
-Std WTA = 0.58
+Avg WTA = 1.38
+Avg waiting = 1.75
+Std WTA = 0.49

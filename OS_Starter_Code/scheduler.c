@@ -510,7 +510,7 @@ void SRTN()
                
                 if (schProcess.state != Stopped)
                 {
-                     IncreaseWaitTime(&schProcess, schProcess.startTime - schProcess.ArrTime);
+                    IncreaseWaitTime(&schProcess, schProcess.startTime - schProcess.ArrTime);
                     fprintf(SchedulerLog, "At time %d process %d started arr %d total %d remain %d wait %d \n", schProcess.startTime, schProcess.id, schProcess.ArrTime, schProcess.RunTime, schProcess.RunTime, schProcess.WaitTime);
                     schProcess.startTime = getClk();
                     IncreaseWaitTime(&schProcess, schProcess.startTime - schProcess.ArrTime);
