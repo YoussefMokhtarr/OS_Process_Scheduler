@@ -104,6 +104,7 @@ void ReadFile()
     int arrivalTime;
     int runningTime;
     int priority;
+    int size;
     FILE *process = fopen("process.txt", "r");
     if (process == NULL)
     {
@@ -124,10 +125,10 @@ void ReadFile()
             {
 
                 id = atoi(ignoredCharacter);
-                fscanf(process, "%d %d %d", &arrivalTime, &runningTime, &priority);
+                fscanf(process, "%d %d %d %d", &arrivalTime, &runningTime, &priority, &size);
                 if (feof(process))
                     break;
-                setPCB(&processToBeSent, id, arrivalTime, runningTime, priority);
+                setPCB(&processToBeSent, id, arrivalTime, runningTime, priority, size);
                 //printf("id %d, Arr time %d, Running time %d, Priority %d \n", processToBeSent.id, processToBeSent.ArrTime, processToBeSent.RunTime, processToBeSent.Priority);
                 AddAccordingToArrivalTime(&que, processToBeSent);
                 count++;

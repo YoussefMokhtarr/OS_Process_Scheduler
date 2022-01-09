@@ -5,6 +5,7 @@
 #define hpf_Algo 1
 #define strn_Algo 2
 #define rr_Algo 3
+#define memSize 1024
 char Algo;
 int time_quantum;
 bool isRunning;
@@ -16,6 +17,8 @@ struct PCB IPC();
 void Run(struct PCB *processToRun);
 void handler1();
 void almHandeler(int);
+void alocate(struct PCB *process);
+void dealocate(struct PCB *process);
 FILE *SchedulerLog;
 FILE *SchedulerPerf;
 int maxCount;
@@ -25,8 +28,13 @@ double *Wait;
 double *totalRun;
 int endTime;
 int startTime;
+int memory[memSize];
+
 int main(int argc, char *argv[])
 {
+    for (int i = 0; i < memSize; i++)
+        memory[i] = -1;
+    
     //signal(SIGCHLD, SIG_IGN);
     signal(SIGALRM, almHandeler);
     Algo = atoi(argv[1]);
@@ -542,8 +550,8 @@ void SRTN()
                         startTime = schProcess.startTime;
                         s++;
                     }
-                    schProcess.startTime = getClk();
-                    IncreaseWaitTime(&schProcess, schProcess.startTime - schProcess.ArrTime);
+                    //schProcess.startTime = getClk();
+                    //IncreaseWaitTime(&schProcess, schProcess.startTime - schProcess.ArrTime);
                 }
                 if (schProcess.state == Stopped)
                 {
@@ -565,4 +573,20 @@ void SRTN()
 void almHandeler(int x) //
 {
     //printf("I received an alarm at %d\n", getClk());
+}
+
+void alocate(struct PCB *process) {
+    int empty = 1;
+    int size = 0;
+    
+    for (int i = 0; i < memSize; i++)
+    {
+        
+    }
+    
+
+}
+
+void dealocate(struct PCB *process) {
+
 }

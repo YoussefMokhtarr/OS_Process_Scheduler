@@ -1,5 +1,5 @@
 # The running algorithm is : RR
 CPU utilization = 100.00%
-Avg WTA = 1.96
-Avg waiting = 4.50
-Std WTA = 0.38
+Avg WTA = 1.76
+Avg waiting = 4.75
+Std WTA = 0.49
