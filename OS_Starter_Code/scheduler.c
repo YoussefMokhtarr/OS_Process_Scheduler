@@ -393,8 +393,6 @@ void SRTN()
         {
             x = wait(&status);
         }
-
-
         if (SRTN_Ready.head != NULL)
         {
             DeQueue(&SRTN_Ready, &schProcess);
