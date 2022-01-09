@@ -30,6 +30,12 @@ int endTime;
 int startTime;
 int memory[memSize];
 
+struct space
+{
+    int start,size;
+};
+
+
 int main(int argc, char *argv[])
 {
     for (int i = 0; i < memSize; i++)
@@ -576,15 +582,28 @@ void almHandeler(int x) //
 }
 
 void alocate(struct PCB *process) {
-    int empty = 1;
+    int full = 0;
     int size = 0;
-    
-    for (int i = 0; i < memSize; i++)
+    int neededsize;
+    int startSize = memSize;
+    neededsize = pow(2,ceil(log(process->size)/log(2)));
+    int st,end;
+    int found = 0;
+    int foundSize, anyfound = 0;
+    for(int i = 0 ; i < memSize;i++)
     {
-        
+        if(memory[i] != -1 && found == 0)
+        {
+            found = 1;
+            st = i;
+        }
+        if(memory[i] == -1 && found == 1)
+        {
+            found = 0;
+            end = i -1;
+            break;
+        }
     }
-    
-
 }
 
 void dealocate(struct PCB *process) {
