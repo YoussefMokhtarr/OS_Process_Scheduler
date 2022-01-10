@@ -29,18 +29,22 @@ double *totalRun;
 int endTime;
 int startTime;
 int memory[memSize];
+struct space freeSlots[memSize];
 
 struct space
 {
-    int start,size;
+    int start, size;
 };
-
 
 int main(int argc, char *argv[])
 {
+    // intiate the whole mem as free
+    freeSlots[0].start = 0;
+    freeSlots[0].size = memSize;
+
     for (int i = 0; i < memSize; i++)
         memory[i] = -1;
-    
+
     //signal(SIGCHLD, SIG_IGN);
     signal(SIGALRM, almHandeler);
     Algo = atoi(argv[1]);
@@ -381,92 +385,9 @@ void RR()
         }
     }
 }
-/*
-void SRTN()
-{
-    struct PriorityQueue SRTN_Ready;
-    initializeQueue(&SRTN_Ready);
-    __clock_t x = getClk();
-    while (1)
-    {
-        struct msgBuff processInfo;
-        int pGeneratorToScheduler = msgget(1234, 0666 | IPC_CREAT);
-        if (pGeneratorToScheduler == -1)
-        {
-            perror("error in creat\n");
-            exit(-1);
-        }
-        //if (c < maxCount)
-        val = 1;
-        int Receivedcounter = 0;
-        while (val != -1)
-        {
-            val = msgrcv(pGeneratorToScheduler, &processInfo, sizeof(processInfo.process), 0, IPC_NOWAIT); // ...........
-            if (val == -1)
-                break;
-            Receivedcounter++;
-            CopyPCB(&tempProcess, processInfo.process);
-            AddAccordingToRemainingTime(&SRTN_Ready, tempProcess);
-        }
 
-        if (schProcess.id != -1 && Receivedcounter > 0)
-        {
-            kill(schProcess.PID, SIGSTOP); // look at RUN function
-            schProcess.RemainingTime = schProcess.RemainingTime - (getClk() - schProcess.startTime);
-            //printf("At time %d process %d stopped arr %d total %d remain %d wait %d \n", getClk(), schProcess.id, schProcess.ArrTime, schProcess.RunTime, schProcess.RemainingTime, schProcess.WaitTime);
-            fprintf(SchedulerLog, "At time %d process %d stopped arr %d total %d remain %d wait %d \n", getClk(), schProcess.id, schProcess.ArrTime, schProcess.RunTime, schProcess.RemainingTime, schProcess.WaitTime);
-            schProcess.state = Stopped;
-            //IncreaseWaitTime(&schProcess, -getClk());
-            AddAccordingToRemainingTime(&SRTN_Ready, tempProcess);
-        }
-        //FIXME: I need to know if the process I just stopped has finished
-        // or any other process finihsed to print the finish stat
-        // ic ould check stopped status by (if remaintime=0)), but generally i can't
-        int status;
-        int x;
-        if (WIFEXITED(status))
-        {
-            x = wait(&status);
-        }
-
-
-        if (SRTN_Ready.head != NULL)
-        {
-            DeQueue(&SRTN_Ready, &schProcess);
-            //IncreaseWaitTime(&schProcess, getClk());
-            if (schProcess.state == Stopped)
-            {
-                kill(schProcess.PID, SIGCONT);
-                // printf("At time %d process %d resumed arr %d total %d remain %d wait %d \n", getClk(), schProcess.id, schProcess.ArrTime, schProcess.RunTime, schProcess.RemainingTime, schProcess.WaitTime);
-                fprintf(SchedulerLog, "At time %d process %d resumed arr %d total %d remain %d wait %d \n", getClk(), schProcess.id, schProcess.ArrTime, schProcess.RunTime, schProcess.RemainingTime, schProcess.WaitTime);
-            }
-            else if (schProcess.state == NotStarted)
-            {
-                schProcess.startTime = getClk();
-                fprintf(SchedulerLog, "At time %d process %d started arr %d total %d remain %d wait %d \n", getClk(), schProcess.id, schProcess.ArrTime, schProcess.RunTime, schProcess.RemainingTime, schProcess.WaitTime);
-                Run(&schProcess);
-            }
-        }
-        Receivedcounter = 0;
-        if (pDone == maxCount)
-            break;
-    }
-}
-*/
 void handler1() // from sigchild
-{               /*
-    if (Algo == 1)
-    {
-        int wstatus = -2;
-        waitpid(-1, &wstatus, 0);
-        isRunning = false;
-        fprintf(SchedulerLog, "At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n", getClk(), schProcess.id, schProcess.ArrTime, schProcess.RunTime, 0, schProcess.WaitTime, getClk() - (schProcess.ArrTime), (double)(getClk() - (schProcess.ArrTime)) / schProcess.RunTime);
-        WTA[pDone] = (double)(getClk() - (schProcess.ArrTime)) / schProcess.RunTime;
-        Wait[pDone] = schProcess.WaitTime;
-        totalRun[pDone] = schProcess.RunTime;
-        schProcess.state = Terminated;
-    }
-    pDone++;*/
+{
     raise(SIGALRM);
 }
 void SRTN()
@@ -581,31 +502,67 @@ void almHandeler(int x) //
     //printf("I received an alarm at %d\n", getClk());
 }
 
-void alocate(struct PCB *process) {
+void alocate(struct PCB *process)
+{
     int full = 0;
     int size = 0;
     int neededsize;
     int startSize = memSize;
-    neededsize = pow(2,ceil(log(process->size)/log(2)));
-    int st,end;
+    neededsize = pow(2, ceil(log(process->size) / log(2)));
+    int st, end;
     int found = 0;
     int foundSize, anyfound = 0;
-    for(int i = 0 ; i < memSize;i++)
+
+    // find  if the smallest location size
+    int smallestSizeFound = memSize;
+    int startOFsamallestSize = -1;
+    for (int i = 0; i < memSize; i++)
     {
-        if(memory[i] != -1 && found == 0)
+        if (freeSlots[i].size >= neededsize && freeSlots[i].size < smallestSizeFound)
+        {
+            smallestSizeFound = freeSlots[i].size;
+            startOFsamallestSize = freeSlots[i].start;
+        }
+    }
+    if (startOFsamallestSize == -1)
+    {
+         // no place to allocate
+        prinf("No free location found\n");
+    }
+    else
+    {
+        // check if the size found is need to be divided or not
+        // if yes
+            //divide
+            while (smallestSizeFound>neededsize)
+            {
+                // divide the greater size and place it in the free slots 
+                ///TODO: need to get the last index occupied in the free slots array
+                
+
+            }
+        // if no 
+            // just allocate it
+
+    }
+
+
+    for (int i = 0; i < memSize; i++)
+    {
+        if (memory[i] != -1 && found == 0)
         {
             found = 1;
             st = i;
         }
-        if(memory[i] == -1 && found == 1)
+        if (memory[i] == -1 && found == 1)
         {
             found = 0;
-            end = i -1;
+            end = i - 1;
             break;
         }
     }
 }
 
-void dealocate(struct PCB *process) {
-
+void dealocate(struct PCB *process)
+{
 }
