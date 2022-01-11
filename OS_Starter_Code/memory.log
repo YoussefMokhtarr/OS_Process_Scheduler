@@ -1,6 +1,6 @@
 At time 1 allocated 128 bytes for proccess 1 from 0 to 127
 At time 4 allocated 32 bytes for proccess 2 from 128 to 159
-At time 10 mem freed 128 bytes from process 1 from 0 to 127
-At time 16 allocated 16 bytes for proccess 3 from 160 to 175
-At time 24 mem freed 16 bytes from process 3 from 160 to 175
+At time 9 mem freed 128 bytes from process 1 from 0 to 127
+At time 18 allocated 16 bytes for proccess 3 from 160 to 175
+At time 26 mem freed 16 bytes from process 3 from 160 to 175
 At time 31 mem freed 32 bytes from process 2 from 128 to 159
