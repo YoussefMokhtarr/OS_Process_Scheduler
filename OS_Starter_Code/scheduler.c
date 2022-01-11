@@ -21,6 +21,7 @@ void alocate(struct PCB *process);
 void dealocate(struct PCB *process);
 FILE *SchedulerLog;
 FILE *SchedulerPerf;
+FILE *memlog;
 int maxCount;
 int parentID;
 double *WTA;
@@ -29,21 +30,193 @@ double *totalRun;
 int endTime;
 int startTime;
 int memory[memSize];
-struct space freeSlots[memSize];
-
 struct space
 {
     int start, size;
 };
 
+struct space freeSlots[memSize];
+
+void mergeSlots()
+{
+    int foundany = 1;
+    //int index = 0;
+    while (foundany == 1)
+    {
+        foundany = 0;
+        for (int index = 0; index < 1024; index++)
+        {
+            if (freeSlots[index].size != -1)
+            {
+                //printf("first if\n");
+                int factor = freeSlots[index].start / freeSlots[index].size;
+                if (factor % 2 == 0)
+                {
+                    //printf(" if 2nd\n");
+                    if (freeSlots[freeSlots[index].start + freeSlots[index].size].size == freeSlots[index].size)
+                    {
+                        //printf("last if\n");
+                        foundany = 1;
+                        freeSlots[freeSlots[index].start + freeSlots[index].size].start = -1;
+                        freeSlots[freeSlots[index].start + freeSlots[index].size].size = -1;
+                        freeSlots[index].size = freeSlots[index].size * 2;
+                    }
+                }
+            }
+        }
+    }
+}
+
+void dealloc(int id)
+{
+    int found = -1;
+    int start = -1;
+    int size = -1;
+    for (int i = 0; i < memSize; i++)
+    {
+        if (memory[i] == id)
+        {
+            found = i;
+            start = i;
+            //printf("id found at location %d\n", start);
+            break;
+        }
+    }
+    if (found == -1)
+        printf("No allocated mem found for this process\n");
+    else
+    {
+        while (found >= 0)
+        {
+            if (memory[found] == id)
+            {
+                memory[found] = -1;
+                if (found < memSize)
+                    found++;
+            }
+            if (memory[found] != id)
+            {
+
+                size = found - start;
+                fprintf(memlog,"At time %d mem freed %d bytes from process %d from %d to %d\n", getClk(), size, id, start, found - 1);
+                found = -1;
+            }
+        }
+        // struct space FreedLoc;
+        //FreedLoc.start=start;
+        //FreedLoc.size=found-start;
+        freeSlots[start].size = size;
+        freeSlots[start].start = start;
+        // merge slots
+        int i = 0;
+        //for (i = 0; i < memSize; i++)
+        while (i < memSize && i > 0)
+        {
+            if (freeSlots[i].size != -1)
+            {
+                int targetLoc = freeSlots[i].size + freeSlots[i].start;
+                if (targetLoc < memSize && freeSlots[targetLoc].size == freeSlots[i].size)
+                {
+                    if (log2(freeSlots[targetLoc].start + freeSlots[targetLoc].size) == ceil(log2(freeSlots[targetLoc].start + freeSlots[targetLoc].size)))
+                    {
+                        freeSlots[targetLoc].size = -1;
+                        freeSlots[targetLoc].start = -1;
+                        freeSlots[i].size = 2 * freeSlots[i].size;
+                        i = i - freeSlots[i].size - 1;
+                    }
+                }
+            }
+            i++;
+        }
+    }
+
+    mergeSlots();
+
+    /*for (int i = 0; i < 1024; i++)
+    {
+        if (freeSlots[i].size != -1)
+        {
+            printf("%d --> %d \t", freeSlots[i].start, freeSlots[i].size);
+        }
+    }*/
+    //printf("\n");
+    ///TODO: merge the adjecnt free slots in the freeSlots arr
+    //Note: you might fing them in sperate locations not just adjecnt
+}
+
+void allocate(int pSize, int id)
+{
+    int size = 0;
+    int neededsize;
+    int startSize = memSize;
+
+    // find  if the smallest location size
+    neededsize = pow(2, ceil(log(pSize) / log(2)));
+    //printf("The needed size for this process is %d\n",neededsize);
+    int smallestSizeFound = memSize + 1;
+    int startOFsamallestSize = -1;
+    int indexOfFreeLoc = -1;
+    for (int i = 0; i < memSize; i++)
+    {
+        if (freeSlots[i].size >= neededsize && freeSlots[i].size < smallestSizeFound)
+        {
+            smallestSizeFound = freeSlots[i].size;
+            startOFsamallestSize = freeSlots[i].start;
+            indexOfFreeLoc = i;
+        }
+    }
+    if (startOFsamallestSize == -1)
+    {
+        // no place to allocate
+        printf("No free location found\n");
+    }
+    else
+    {
+        // check if the size found is need to be divided or not
+        // if yes
+        //divide
+        while (smallestSizeFound > neededsize)
+        {
+            // divide the greater size and place it in the free slots
+            // change the parameters of the current index
+            freeSlots[indexOfFreeLoc].size = freeSlots[indexOfFreeLoc].size / 2;
+            // and add the other half to the free Slot index
+            struct space temp;
+            temp.size = freeSlots[indexOfFreeLoc].size;
+            temp.start = freeSlots[indexOfFreeLoc].start + temp.size;
+            // add the new slot to the FreeSlots arr
+            freeSlots[temp.start].size = temp.size;
+            freeSlots[temp.start].start = temp.start;
+
+            smallestSizeFound = freeSlots[indexOfFreeLoc].size;
+        }
+        // allocate the mem and remove the allocated place from the free slots list
+        //actual allocation
+        for (int i = freeSlots[indexOfFreeLoc].start; i < freeSlots[indexOfFreeLoc].size + freeSlots[indexOfFreeLoc].start; i++)
+        {
+            memory[i] = id;
+        }
+        fprintf(memlog,"At time %d allocated %d bytes for proccess %d from %d to %d\n", getClk(), freeSlots[indexOfFreeLoc].size, id, freeSlots[indexOfFreeLoc].start, freeSlots[indexOfFreeLoc].size + freeSlots[indexOfFreeLoc].start - 1);
+        // remove it from the freeSlots list
+        freeSlots[indexOfFreeLoc].size = -1;
+        freeSlots[indexOfFreeLoc].start = -1;
+    }
+}
+
 int main(int argc, char *argv[])
 {
-    // intiate the whole mem as free
     freeSlots[0].start = 0;
     freeSlots[0].size = memSize;
-
+    for (int i = 1; i < memSize; i++)
+    {
+        freeSlots[i].start = -1;
+        freeSlots[i].size = -1;
+    }
+    // intalizing of free arr;
     for (int i = 0; i < memSize; i++)
+    {
         memory[i] = -1;
+    }
 
     //signal(SIGCHLD, SIG_IGN);
     signal(SIGALRM, almHandeler);
@@ -59,6 +232,7 @@ int main(int argc, char *argv[])
     __clock_t x = getClk();
 
     SchedulerLog = fopen("scheduler.log", "w");
+    memlog = fopen("memory.log", "w");
     switch (Algo)
     {
     case hpf_Algo:
@@ -75,6 +249,7 @@ int main(int argc, char *argv[])
 
     //printing Log File
     fclose(SchedulerLog);
+    fclose(memlog);
     double avgWait = 0;
     double avgWTA = 0;
     double CPUperf = 0;
@@ -134,6 +309,7 @@ void HPF()
     int s = 0;
     while (1)
     {
+        //printf("I entered\n");
         struct msgBuff processInfo;
         int pGeneratorToScheduler = msgget(1234, 0666 | IPC_CREAT);
         if (pGeneratorToScheduler == -1)
@@ -159,6 +335,7 @@ void HPF()
                 schProcess.startTime = getClk();
                 IncreaseWaitTime(&schProcess, schProcess.startTime - schProcess.ArrTime);
                 fprintf(SchedulerLog, "At time %d process %d started arr %d total %d remain %d wait %d \n", schProcess.startTime, schProcess.id, schProcess.ArrTime, schProcess.RunTime, schProcess.RunTime, schProcess.WaitTime);
+                allocate(schProcess.size, schProcess.id);
                 if (s == 0)
                 {
                     startTime = schProcess.startTime;
@@ -185,6 +362,8 @@ void HPF()
                     schProcess.PID = pid;
                 }
                 fprintf(SchedulerLog, "At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n", getClk(), schProcess.id, schProcess.ArrTime, schProcess.RunTime, 0, schProcess.WaitTime, getClk() - (schProcess.ArrTime), (double)(getClk() - (schProcess.ArrTime)) / schProcess.RunTime);
+                dealloc(schProcess.id);
+                //printf("I entered\n");
                 endTime = getClk();
                 WTA[pDone] = (double)(getClk() - (schProcess.ArrTime)) / schProcess.RunTime;
                 Wait[pDone] = schProcess.WaitTime;
@@ -282,6 +461,7 @@ void RR()
                 {
                     //printf("At time %d process %d started arr %d total %d remain %d wait %d \n", getClk(), schProcess.id, schProcess.ArrTime, schProcess.RunTime, schProcess.RemainingTime, schProcess.WaitTime);
                     fprintf(SchedulerLog, "At time %d process %d started arr %d total %d remain %d wait %d \n", getClk(), schProcess.id, schProcess.ArrTime, schProcess.RunTime, schProcess.RemainingTime, schProcess.WaitTime);
+                    allocate(schProcess.size, schProcess.id);
                     if (s == 0)
                     {
                         startTime = schProcess.startTime;
@@ -306,6 +486,7 @@ void RR()
                 else
                 {
                     fprintf(SchedulerLog, "At time %d process %d started arr %d total %d remain %d wait %d \n", getClk(), schProcess.id, schProcess.ArrTime, schProcess.RunTime, schProcess.RemainingTime, schProcess.WaitTime);
+                    allocate(schProcess.size, schProcess.id);
                     if (s == 0)
                     {
                         startTime = schProcess.startTime;
@@ -322,6 +503,7 @@ void RR()
                     WIFEXITED(status);
                     // printf("At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n", getClk(), schProcess.id, schProcess.ArrTime, schProcess.RunTime, 0, schProcess.WaitTime, getClk() - (schProcess.ArrTime), (double)(getClk() - (schProcess.ArrTime)) / schProcess.RunTime);
                     fprintf(SchedulerLog, "At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n", getClk(), schProcess.id, schProcess.ArrTime, schProcess.RunTime, 0, schProcess.WaitTime, getClk() - (schProcess.ArrTime), (double)(getClk() - (schProcess.ArrTime)) / schProcess.RunTime);
+                    dealloc(schProcess.id);
                     endTime = getClk();
                     WTA[pDone] = (double)(getClk() - (schProcess.ArrTime)) / schProcess.RunTime;
                     Wait[pDone] = schProcess.WaitTime;
@@ -368,6 +550,7 @@ void RR()
                     WIFEXITED(status);
                     //printf("At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n", getClk(), schProcess.id, schProcess.ArrTime, schProcess.RunTime, 0, schProcess.WaitTime, getClk() - (schProcess.ArrTime), (double)(getClk() - (schProcess.ArrTime)) / schProcess.RunTime);
                     fprintf(SchedulerLog, "At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n", getClk(), schProcess.id, schProcess.ArrTime, schProcess.RunTime, 0, schProcess.WaitTime, getClk() - (schProcess.ArrTime), (double)(getClk() - (schProcess.ArrTime)) / schProcess.RunTime);
+                    dealloc(schProcess.id);
                     endTime = getClk();
                     WTA[pDone] = (double)(getClk() - (schProcess.ArrTime)) / schProcess.RunTime;
                     Wait[pDone] = schProcess.WaitTime;
@@ -436,6 +619,7 @@ void SRTN()
                     schProcess.state = Terminated;
                     isRunning = false;
                     fprintf(SchedulerLog, "At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n", getClk(), schProcess.id, schProcess.ArrTime, schProcess.RunTime, 0, schProcess.WaitTime, getClk() - (schProcess.ArrTime), (double)(getClk() - (schProcess.ArrTime)) / schProcess.RunTime);
+                    dealloc(schProcess.id);
                     endTime = getClk();
                     WTA[pDone] = (double)(getClk() - (schProcess.ArrTime)) / schProcess.RunTime;
                     Wait[pDone] = schProcess.WaitTime;
@@ -472,6 +656,7 @@ void SRTN()
                 {
                     IncreaseWaitTime(&schProcess, schProcess.startTime - schProcess.ArrTime);
                     fprintf(SchedulerLog, "At time %d process %d started arr %d total %d remain %d wait %d \n", schProcess.startTime, schProcess.id, schProcess.ArrTime, schProcess.RunTime, schProcess.RunTime, schProcess.WaitTime);
+                    allocate(schProcess.size,schProcess.id);
                     if (s == 0)
                     {
                         startTime = schProcess.startTime;
@@ -500,69 +685,4 @@ void SRTN()
 void almHandeler(int x) //
 {
     //printf("I received an alarm at %d\n", getClk());
-}
-
-void alocate(struct PCB *process)
-{
-    int full = 0;
-    int size = 0;
-    int neededsize;
-    int startSize = memSize;
-    neededsize = pow(2, ceil(log(process->size) / log(2)));
-    int st, end;
-    int found = 0;
-    int foundSize, anyfound = 0;
-
-    // find  if the smallest location size
-    int smallestSizeFound = memSize;
-    int startOFsamallestSize = -1;
-    for (int i = 0; i < memSize; i++)
-    {
-        if (freeSlots[i].size >= neededsize && freeSlots[i].size < smallestSizeFound)
-        {
-            smallestSizeFound = freeSlots[i].size;
-            startOFsamallestSize = freeSlots[i].start;
-        }
-    }
-    if (startOFsamallestSize == -1)
-    {
-         // no place to allocate
-        prinf("No free location found\n");
-    }
-    else
-    {
-        // check if the size found is need to be divided or not
-        // if yes
-            //divide
-            while (smallestSizeFound>neededsize)
-            {
-                // divide the greater size and place it in the free slots 
-                ///TODO: need to get the last index occupied in the free slots array
-                
-
-            }
-        // if no 
-            // just allocate it
-
-    }
-
-
-    for (int i = 0; i < memSize; i++)
-    {
-        if (memory[i] != -1 && found == 0)
-        {
-            found = 1;
-            st = i;
-        }
-        if (memory[i] == -1 && found == 1)
-        {
-            found = 0;
-            end = i - 1;
-            break;
-        }
-    }
-}
-
-void dealocate(struct PCB *process)
-{
 }
